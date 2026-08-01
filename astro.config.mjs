@@ -9,7 +9,12 @@ export default defineConfig({
     sitemap(),
     starlight({
       title: 'Realmroot',
-      description: 'Identity and delegated access for people, apps, and agents.',
+      description: 'Turn existing OpenAPI services into secure, discoverable tools for AI agents.',
+      favicon: '/favicon.png',
+      logo: {
+        src: './src/assets/realmroot-logo.png',
+        alt: 'Realmroot',
+      },
       social: [
         {
           icon: 'github',

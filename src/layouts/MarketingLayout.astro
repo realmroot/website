@@ -7,7 +7,8 @@ interface Props {
   description: string;
   locale?: Locale;
   canonicalPath?: string;
-  surface?: 'identity' | 'wallet';
+  surface?: 'platform' | 'wallet';
+  ogImage?: string;
 }
 
 const {
@@ -15,7 +16,8 @@ const {
   description,
   locale = 'en',
   canonicalPath = Astro.url.pathname,
-  surface = 'identity',
+  surface = 'platform',
+  ogImage = '/og.png',
 } = Astro.props;
 const t = copy[locale];
 const isChinese = locale === 'zh-CN';
@@ -34,7 +36,8 @@ const canonical = new URL(canonicalPath, Astro.site);
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content={isWallet ? '#151814' : '#f4f2ea'} />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="canonical" href={canonical} />
     <link rel="alternate" hreflang={isChinese ? 'en' : 'zh-CN'} href={languageHref} />
     <link rel="alternate" type="application/rss+xml" title="Realmroot Blog" href={isChinese ? '/zh-cn/rss.xml' : '/rss.xml'} />
@@ -43,22 +46,22 @@ const canonical = new URL(canonicalPath, Astro.site);
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={new URL('/og.png', Astro.site)} />
+    <meta property="og:image" content={new URL(ogImage, Astro.site)} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={new URL('/og.png', Astro.site)} />
+    <meta name="twitter:image" content={new URL(ogImage, Astro.site)} />
     <title>{title}</title>
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to content</a>
+    <a class="skip-link" href="#main">{isChinese ? '跳到主要内容' : 'Skip to content'}</a>
     <header class:list={['site-header', { 'wallet-header': isWallet }]}>
       <div class="nav-shell">
-        <a class="brand" href={t.home} aria-label="Realmroot home">
-          <span class="brand-tile" aria-hidden="true">R</span>
-          <span>Realmroot</span>
+        <a class="brand" href={t.home} aria-label={isChinese ? 'Realmroot 首页' : 'Realmroot home'}>
+          <img class="brand-mark" src="/realmroot-logo.png" width="28" height="26" alt="" aria-hidden="true" />
+          <span>realmroot</span>
         </a>
-        <nav class="desktop-nav" aria-label="Primary navigation">
+        <nav class="desktop-nav" aria-label={isChinese ? '主导航' : 'Primary navigation'}>
           <div class="product-switcher">
             <button class="product-switcher-trigger" type="button" aria-haspopup="true">
               <span>{productLabel}</span>
@@ -66,10 +69,10 @@ const canonical = new URL(canonicalPath, Astro.site);
             </button>
             <div class="product-switcher-menu" aria-label={productLabel}>
               <a class:list={['product-switcher-option', { active: !isWallet }]} href={t.home} aria-current={!isWallet ? 'page' : undefined}>
-                <span class="product-switcher-mark" aria-hidden="true">I</span>
+                <span class="product-switcher-mark realmroot-product-mark" aria-hidden="true"><img src="/realmroot-logo.png" width="24" height="22" alt="" /></span>
                 <span class="product-switcher-copy">
-                  <span class="product-switcher-name">Identity</span>
-                  <span>{isChinese ? '用户 · 应用 · Agent' : 'People · Apps · Agents'}</span>
+                  <span class="product-switcher-name">Realmroot</span>
+                  <span>{isChinese ? '工具平面 · 身份 · 信任' : 'Tool plane · identity · trust'}</span>
                 </span>
                 <span class="product-switcher-arrow" aria-hidden="true">→</span>
               </a>
@@ -91,14 +94,14 @@ const canonical = new URL(canonicalPath, Astro.site);
             </>
           ) : (
             <>
-              <a href={`${t.home}#agents`}>{t.nav.agents}</a>
-              <a href={`${t.home}#architecture`}>{t.nav.architecture}</a>
+              <a href={`${t.home}#agent-tool-plane`}>{t.nav.toolPlane}</a>
+              <a href={`${t.home}#trust`}>{t.nav.trust}</a>
               <a href={isChinese ? '/zh-cn/docs/' : '/docs/'}>{t.nav.docs}</a>
             </>
           )}
           <a href={isChinese ? '/zh-cn/blog/' : '/blog/'}>{t.nav.blog}</a>
         </nav>
-        <nav class="compact-nav" aria-label="Primary navigation">
+        <nav class="compact-nav" aria-label={isChinese ? '主导航' : 'Primary navigation'}>
           <details class="product-switcher product-switcher-compact">
             <summary>
               <span>{productLabel}</span>
@@ -106,10 +109,10 @@ const canonical = new URL(canonicalPath, Astro.site);
             </summary>
             <div class="product-switcher-menu" aria-label={productLabel}>
               <a class:list={['product-switcher-option', { active: !isWallet }]} href={t.home} aria-current={!isWallet ? 'page' : undefined}>
-                <span class="product-switcher-mark" aria-hidden="true">I</span>
+                <span class="product-switcher-mark realmroot-product-mark" aria-hidden="true"><img src="/realmroot-logo.png" width="24" height="22" alt="" /></span>
                 <span class="product-switcher-copy">
-                  <span class="product-switcher-name">Identity</span>
-                  <span>{isChinese ? '用户 · 应用 · Agent' : 'People · Apps · Agents'}</span>
+                  <span class="product-switcher-name">Realmroot</span>
+                  <span>{isChinese ? '工具平面 · 身份 · 信任' : 'Tool plane · identity · trust'}</span>
                 </span>
                 <span class="product-switcher-arrow" aria-hidden="true">→</span>
               </a>
@@ -129,7 +132,7 @@ const canonical = new URL(canonicalPath, Astro.site);
         </nav>
         <div class="nav-actions">
           <a class="language-link" href={languageHref}>{isChinese ? 'EN' : '中文'}</a>
-          <a class="button button-dark button-small" href={isWallet ? site.wallet : site.github}>
+          <a class="button button-primary button-small" href={isWallet ? site.wallet : site.github}>
             {isWallet ? (isChinese ? '打开 Wallet' : 'Open Wallet') : t.nav.github}
           </a>
         </div>
@@ -142,8 +145,8 @@ const canonical = new URL(canonicalPath, Astro.site);
       <div class="footer-grid">
         <div>
           <a class="brand footer-brand" href={t.home}>
-            <span class="brand-tile" aria-hidden="true">R</span>
-            <span>Realmroot</span>
+            <img class="brand-mark" src="/realmroot-logo.png" width="28" height="26" alt="" aria-hidden="true" />
+            <span>realmroot</span>
           </a>
           <p>{isWallet
             ? (isChinese ? '给 Agent 预算，而不是钱包密钥。' : 'Give Agents a budget, not your wallet keys.')
@@ -151,9 +154,10 @@ const canonical = new URL(canonicalPath, Astro.site);
         </div>
         <div>
           <strong>{t.footer.product}</strong>
-          <a href={t.home}>Identity</a>
+          <a href={t.home}>Realmroot</a>
           <a href={walletLandingHref}>Wallet</a>
-          <a href={`${t.home}#architecture`}>{t.nav.architecture}</a>
+          <a href={`${t.home}#agent-tool-plane`}>{t.nav.toolPlane}</a>
+          <a href={`${t.home}#trust`}>{t.nav.trust}</a>
         </div>
         <div>
           <strong>{t.footer.resources}</strong>

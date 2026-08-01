@@ -17,243 +17,210 @@ const posts = (await getCollection('blog'))
 
 const t = zh
   ? {
-      eyebrow: '面向 AI Agent 的身份与委托授权',
-      title: ['Agent 需要身份。', '不是借来的凭据。'],
-      lead: '为每个 Agent 建立持久身份，并让控制者只批准它需要的 API、Scope 与授权期限。',
-      primary: '了解工作方式',
+      eyebrow: '面向现有互联网的 Agent 工具平面',
+      title: ['让每个 API，', '都能为 Agent 所用。'],
+      lead: 'Realmroot 把现有 OpenAPI 服务转化为 Agent 可发现、可安全调用的工具，而不要求每个服务再维护一套 Agent 专用集成。',
+      primary: '探索工具平面',
       secondary: '阅读文档',
-      facts: ['跨宿主保持稳定', '精确 Scope', '短期令牌', '随时可撤销'],
-      passport: {
-        label: 'Agent Passport / Authority Flow',
-        hosts: '宿主凭据',
-        hostNames: ['Laptop Key', 'Worker Key', 'Sandbox Key'],
-        identity: '持久 Agent 身份',
-        name: 'Research Agent',
-        issuer: 'Issuer',
-        issuerValue: 'Realmroot',
-        subject: 'Subject',
-        subjectValue: '跨宿主不可变',
-        verified: '一个身份，多个可替换宿主密钥',
-        request: '显式授权申请',
-        status: '等待批准',
-        resource: 'Resource',
-        scope: 'Exact scope',
-        lifetime: 'Lifetime',
+      facts: ['OpenAPI 保持为契约', '实时发现', '精确授权', '直连原始 API'],
+      map: {
+        label: 'Realmroot、Agent 与 APIs 的关系：Agent 直连 APIs，Realmroot 位于数据路径之外',
       },
-      authorityTitle: ['让 Agent 行动。', '让权限始终明确。'],
-      authorityNote: '不冒充用户。不下发 Refresh Token。不代理业务 API。',
-      flow: [
-        ['身份', '为 Agent 签发不依赖当前宿主的持久 Subject。'],
-        ['申请', 'Agent 请求指定 Resource、Scope 与期限。'],
-        ['批准', '控制者只授予任务真正需要的权限。'],
-        ['访问', 'Agent 使用短期 DPoP 令牌直连 API。'],
+      questionsTitle: ['API 已经存在。', 'Agent 仍然缺少四个答案。'],
+      questionsNote: 'Realmroot 把答案组织成一条可运行的链路。',
+      questions: [
+        ['发现', '现在有哪些资源与操作可以使用？'],
+        ['理解', '如何按照实时契约正确调用？'],
+        ['信任', '这个 Agent 是谁，又由谁控制？'],
+        ['行动', '为什么资源服务应该允许这次请求？'],
       ],
-      distinctionEyebrow: '为什么是 Realmroot',
-      distinctionTitle: ['Agent 是主体。', '权限是核心。'],
-      distinctionBody: 'Realmroot 把 Agent 作为独立安全主体建模，同时保留人类控制者的最终授权权力。',
-      distinctions: [
+      planeEyebrow: 'Agent Tool Plane',
+      planeTitle: ['复用现有 API。', '停止重复集成。'],
+      planeBody: '资源团队继续维护自己的 API、OpenAPI 与权限边界。Realmroot 负责把这些能力注册、发现并装配给 Agent。',
+      planeValues: [
         {
           number: '01',
-          title: '身份独立于宿主。',
-          body: 'Agent 的 Issuer 与 Subject 保持稳定。宿主密钥可以轮换、撤销或迁移，而不会创建新的公共身份。',
-          proof: 'Stable identity ≠ host credential',
+          title: '实时发现，不靠静态目录。',
+          body: 'Agent 在任务发生时发现可用资源与最新操作，不需要把不断增长的工具清单写死在提示词或客户端里。',
+          proof: 'Live contract → current capability',
         },
         {
           number: '02',
-          title: '登记不授予权限。',
-          body: '建立身份不会自动获得业务访问。更换 Resource、Account 或扩大 Scope，都需要控制者重新决定。',
-          proof: 'Identity first. Authority on request.',
+          title: '通用调用，不再逐个适配。',
+          body: 'OpenAPI 继续描述操作与 Scope，Realmroot Skill 与 Restish 提供一致的调用方式。',
+          proof: 'One Skill + one generic CLI',
         },
         {
           number: '03',
-          title: '授权不进入数据路径。',
-          body: '批准后，Agent 使用 Audience 限定、DPoP 绑定的短期令牌直接调用原生或外部 API。',
-          proof: 'Agent → API, directly',
+          title: '资源越多，能力越强。',
+          body: '每加入一个资源，Agent 的能力网络就自然扩展，而资源服务无需新增 Agent 专用后端。',
+          proof: 'Register once → composable by Agents',
         },
       ],
-      grantEyebrow: 'Explicit authority',
-      grantTitle: ['每一次批准，', '都有明确边界。'],
-      grantBody: '每个 Grant 都绑定一个 Agent、一个 Resource、精确 Scope 与明确期限。审计记录可以还原谁批准了什么，而不会记录凭据或原始 Token。',
-      ledger: {
-        title: 'Access request',
-        agent: 'Agent principal',
-        controller: 'Controller',
-        resource: 'Customer Support API',
-        scopes: ['tickets:read', 'drafts:write'],
-        lifetime: 'Limited · 30 min',
-        approved: 'Controller approved',
-        issued: 'Short-lived token issued',
+      layersEyebrow: '一个产品，两层价值',
+      layersTitle: ['能力在上。', '信任在下。'],
+      layersBody: '工具没有信任就不安全；身份没有工具也无法完成任务。Realmroot 把两者组合成一次可解释、可撤销的直接调用。',
+      toolLayer: {
+        index: '01 · RESULT LAYER',
+        name: 'Agent Tool Plane',
+        detail: '让 Agent 找到正确的工具，并按实时契约完成操作。',
+        items: ['资源注册', '实时发现', '通用调用', '无限组合'],
       },
-      realmEyebrow: 'One realm, every actor',
-      realmTitle: ['Agent-first，', '服务每一种身份。'],
-      realmBody: '用户、应用、API 和 Agent 共享同一个 Issuer 与策略边界。产品不再拼装独立的登录系统、Agent 密钥仓库和授权代理。',
-      realmActors: [
-        ['People', 'Hosted sign-in, MFA, passkeys, sessions'],
-        ['Applications', 'OIDC clients and product integrations'],
-        ['Agents', 'Durable identity and delegated authority'],
-        ['APIs', 'Native or external protected resources'],
+      trustLayer: {
+        index: '02 · TRUST FOUNDATION',
+        name: 'Identity & Trust Infrastructure',
+        detail: 'IDP 是地基：为每次工具调用提供稳定主体、精确权限与可审计生命周期。',
+        items: ['Agent 身份', '控制者关系', 'Grant 审批', '撤销与审计'],
+      },
+      outcome: '广泛发现。精确授权。直接调用。',
+      boundaryEyebrow: '边界清晰，才能安全扩展',
+      boundaryTitle: ['原始服务，', '始终保留最终决定权。'],
+      boundaryBody: 'Realmroot 不是 HTTP 代理，也不是业务权限数据库。它协调发现、身份与委托授权；资源服务继续执行自己的业务规则。',
+      realmrootOwns: 'Realmroot 负责',
+      realmrootItems: ['注册与发现', '稳定 Agent 身份', '控制者与 Grant 生命周期', '短期 Token 协调', '审批、撤销与审计'],
+      resourceOwns: '资源服务负责',
+      resourceItems: ['API 与 OpenAPI 契约', '业务 Scope 语义', '对象级权限', '数据与业务规则', '最终 Allow / Deny'],
+      direct: 'Agent 携带足够的身份与权限，直接调用原始服务',
+      standardsTitle: '基于开放契约与标准，而不是专有 Agent 隧道。',
+      standards: ['OpenAPI', 'OpenID Connect', 'OAuth 2.0', 'RFC 8693', 'DPoP'],
+      valueEyebrow: '价值随资源增长而累积',
+      valueTitle: ['一次接入。', '整个生态都得到回报。'],
+      participants: [
+        ['Agent 用户', '无需交出个人 API Key，Agent 也能完成更多真实任务。'],
+        ['Agent 开发者', '一个 Skill 与通用 CLI，代替不断增长的专用适配器。'],
+        ['资源服务团队', '现有 API 与 OpenAPI 直接成为 Agent 能力，无需维护平行接口。'],
+        ['产品团队', '托管身份、OIDC、账户与管理能力不必重复建设。'],
+        ['安全团队', '稳定主体、窄 Scope、短期 DPoP、撤销与审计都保持明确。'],
       ],
-      boundary: ['一个部署', '一个用户池', '一个 Issuer', '一个策略边界'],
-      standardsTitle: '使用开放标准，而不是专有 Agent 隧道。',
-      standards: ['OpenID Connect', 'OAuth 2.0', 'RFC 8693', 'DPoP', 'OpenAPI'],
       blogEyebrow: 'Journal',
-      blogTitle: ['Agent 身份与显式权限'],
+      blogTitle: ['构建 Agent 能力网络'],
       allPosts: '查看全部文章',
       read: '阅读',
-      finalTitle: ['给每个 Agent 一个真正的身份。'],
-      finalBody: '运行一个 Realm，为人、应用、API 与 Agent 建立清晰的信任根。',
+      finalEyebrow: 'Every API, Agent-ready.',
+      finalTitle: ['让你的 API，', '成为 Agent 的下一项能力。'],
+      finalBody: '保留现有服务边界，用 Realmroot 增加发现、信任与精确委托授权。',
       deploy: '部署 Realmroot',
     }
   : {
-      eyebrow: 'Identity and delegated access for AI agents',
-      title: ['Agents need identity.', 'Not borrowed credentials.'],
-      lead: 'Give every Agent a durable identity and controller-approved access to the exact APIs, scopes, and lifetime it needs.',
-      primary: 'See how it works',
+      eyebrow: 'The Agent tool plane for the existing internet',
+      title: ['Every API,', 'Agent-ready.'],
+      lead: 'Realmroot turns existing OpenAPI services into secure, discoverable tools for Agents—without making every service maintain a separate Agent integration.',
+      primary: 'Explore the tool plane',
       secondary: 'Read the docs',
-      facts: ['Stable across hosts', 'Exact scopes', 'Short-lived tokens', 'Revocable by design'],
-      passport: {
-        label: 'Agent Passport / Authority Flow',
-        hosts: 'Host credentials',
-        hostNames: ['Laptop key', 'Worker key', 'Sandbox key'],
-        identity: 'Durable Agent identity',
-        name: 'Research Agent',
-        issuer: 'Issuer',
-        issuerValue: 'Realmroot',
-        subject: 'Subject',
-        subjectValue: 'Immutable across hosts',
-        verified: 'One identity, many replaceable host keys',
-        request: 'Explicit authority request',
-        status: 'Awaiting approval',
-        resource: 'Resource',
-        scope: 'Exact scope',
-        lifetime: 'Lifetime',
+      facts: ['OpenAPI stays the contract', 'Live discovery', 'Precise authority', 'Direct API calls'],
+      map: {
+        label: 'Relationship between Realmroot, an Agent, and APIs: the Agent calls APIs directly while Realmroot stays off the data path',
       },
-      authorityTitle: ['Let agents act.', 'Explicit authority.'],
-      authorityNote: 'No impersonation. No refresh tokens. No proxy.',
-      flow: [
-        ['Identity', 'Issue one durable subject to the Agent, independent of its host.'],
-        ['Request', 'The Agent asks for a named resource, scope, and token lifetime.'],
-        ['Approve', 'A controller grants only the authority the task actually needs.'],
-        ['Access', 'The Agent calls the API directly with a short-lived DPoP token.'],
+      questionsTitle: ['The API already exists.', 'Agents still need four answers.'],
+      questionsNote: 'Realmroot turns the answers into one operating path.',
+      questions: [
+        ['Discover', 'What resources and operations exist right now?'],
+        ['Understand', 'How should the live contract be invoked correctly?'],
+        ['Trust', 'Who is this Agent, and who controls it?'],
+        ['Act', 'Why should the resource server allow this request?'],
       ],
-      distinctionEyebrow: 'Why Realmroot',
-      distinctionTitle: ['Agent principals.', 'Authority is core.'],
-      distinctionBody: 'Realmroot models an Agent as its own security principal while keeping a human or organization in control of every authority decision.',
-      distinctions: [
+      planeEyebrow: 'The Agent Tool Plane',
+      planeTitle: ['Reuse the API.', 'Remove the reintegration.'],
+      planeBody: 'Resource teams keep their APIs, OpenAPI contracts, and authorization boundaries. Realmroot registers, discovers, and equips those capabilities for Agents.',
+      planeValues: [
         {
           number: '01',
-          title: 'Identity survives the host.',
-          body: 'The Agent keeps one issuer and subject while host keys rotate, move, or are revoked. A machine credential never becomes the public identity.',
-          proof: 'Stable identity ≠ host credential',
+          title: 'Discover live, not from a static catalog.',
+          body: 'Agents find available resources and current operations at task time instead of carrying a growing tool list in prompts or clients.',
+          proof: 'Live contract → current capability',
         },
         {
           number: '02',
-          title: 'Enrollment grants nothing.',
-          body: 'Establishing identity does not imply business access. A new resource, account, or wider scope always requires a new controller decision.',
-          proof: 'Identity first. Authority on request.',
+          title: 'Invoke generically, not adapter by adapter.',
+          body: 'OpenAPI remains the operation and scope vocabulary. The Realmroot Skill and Restish provide one consistent way to call it.',
+          proof: 'One Skill + one generic CLI',
         },
         {
           number: '03',
-          title: 'Authority stays off the data path.',
-          body: 'After approval, the Agent calls native or external APIs directly with a short-lived, audience-bound, DPoP-bound token.',
-          proof: 'Agent → API, directly',
+          title: 'Compound capability as resources join.',
+          body: 'Every registered resource expands what Agents can do without adding Agent-specific backend code to the service.',
+          proof: 'Register once → composable by Agents',
         },
       ],
-      grantEyebrow: 'Explicit authority',
-      grantTitle: ['One approval.', 'Fully explainable.'],
-      grantBody: 'Every grant binds one Agent to one resource, exact scopes, and a clear lifetime. Audit records reconstruct who approved what without recording credentials or raw tokens.',
-      ledger: {
-        title: 'Access request',
-        agent: 'Agent principal',
-        controller: 'Controller',
-        resource: 'Customer Support API',
-        scopes: ['tickets:read', 'drafts:write'],
-        lifetime: 'Limited · 30 min',
-        approved: 'Controller approved',
-        issued: 'Short-lived token issued',
+      layersEyebrow: 'One product, two inseparable layers',
+      layersTitle: ['Capability above.', 'Trust beneath.'],
+      layersBody: 'Tools without trust are unsafe. Identity without tools never completes the task. Realmroot combines both into one explainable, revocable, direct call.',
+      toolLayer: {
+        index: '01 · RESULT LAYER',
+        name: 'Agent Tool Plane',
+        detail: 'Agents find the right tool and complete the operation against its live contract.',
+        items: ['Resource registration', 'Live discovery', 'Generic invocation', 'Unbounded composition'],
       },
-      realmEyebrow: 'One realm, every actor',
-      realmTitle: ['Agent-first.', 'Not Agent-only.'],
-      realmBody: 'People, applications, APIs, and Agents share one issuer and policy boundary. Your product stops stitching together a login system, an Agent key vault, and an authorization proxy.',
-      realmActors: [
-        ['People', 'Hosted sign-in, MFA, passkeys, sessions'],
-        ['Applications', 'OIDC clients and product integrations'],
-        ['Agents', 'Durable identity and delegated authority'],
-        ['APIs', 'Native or external protected resources'],
+      trustLayer: {
+        index: '02 · TRUST FOUNDATION',
+        name: 'Identity & Trust Infrastructure',
+        detail: 'The IDP is the foundation: stable principals, precise authority, and an auditable lifecycle for every tool call.',
+        items: ['Agent identity', 'Controller relation', 'Grant approval', 'Revocation & audit'],
+      },
+      outcome: 'Discover broadly. Authorize precisely. Call directly.',
+      boundaryEyebrow: 'Clear boundaries scale safely',
+      boundaryTitle: ['The original service', 'keeps the final decision.'],
+      boundaryBody: 'Realmroot is not an HTTP proxy or a copied business-permission database. It coordinates discovery, identity, and delegated authority while the resource server enforces its own rules.',
+      realmrootOwns: 'Realmroot owns',
+      realmrootItems: ['Registration and discovery', 'Stable Agent identity', 'Controller and grant lifecycle', 'Short-lived token coordination', 'Approval, revocation, and audit'],
+      resourceOwns: 'The resource server owns',
+      resourceItems: ['API and OpenAPI contract', 'Business scope semantics', 'Object-level permissions', 'Data and business rules', 'Final allow / deny'],
+      direct: 'The Agent calls the original service directly with sufficient identity and authority',
+      standardsTitle: 'Open contracts and standards. No proprietary Agent tunnel.',
+      standards: ['OpenAPI', 'OpenID Connect', 'OAuth 2.0', 'RFC 8693', 'DPoP'],
+      valueEyebrow: 'Value compounds with every resource',
+      valueTitle: ['One integration.', 'Every participant wins.'],
+      participants: [
+        ['Agent users', 'Complete more real tasks without handing over a personal API key.'],
+        ['Agent developers', 'Use one Skill and a generic CLI instead of a growing set of custom adapters.'],
+        ['Resource teams', 'Turn the existing API and OpenAPI into Agent capability without a parallel surface.'],
+        ['Product teams', 'Reuse hosted identity, OIDC, account, and administration infrastructure.'],
+        ['Security teams', 'Keep principals, narrow scopes, short-lived DPoP, revocation, and audit explicit.'],
       ],
-      boundary: ['One deployment', 'One user pool', 'One issuer', 'One policy boundary'],
-      standardsTitle: 'Open standards. No proprietary Agent tunnel.',
-      standards: ['OpenID Connect', 'OAuth 2.0', 'RFC 8693', 'DPoP', 'OpenAPI'],
       blogEyebrow: 'Journal',
-      blogTitle: ['Agent identity. Explicit authority.'],
+      blogTitle: ['Building the Agent capability network'],
       allPosts: 'View all writing',
       read: 'Read',
-      finalTitle: ['Give your Agents a real identity.'],
-      finalBody: 'Run one realm as the trust root for people, applications, APIs, and Agents.',
+      finalEyebrow: 'Every API, Agent-ready.',
+      finalTitle: ['Make your API', 'an Agent capability.'],
+      finalBody: 'Keep the service boundary you already trust. Add discovery, identity, and precise delegated authority with Realmroot.',
       deploy: 'Deploy Realmroot',
     };
 ---
 
-<section class="hero section-shell" id="agents">
+<section class="hero section-shell" id="tool-plane">
   <div class="hero-copy">
     <p class="eyebrow"><span></span>{t.eyebrow}</p>
     <h1><span>{t.title[0]}</span><span>{t.title[1]}</span></h1>
     <p class="hero-lead"><PhraseText locale={locale} text={t.lead} /></p>
     <div class="hero-actions">
-      <a class="button button-primary" href="#authority">{t.primary}<span aria-hidden="true">→</span></a>
+      <a class="button button-primary" href="#agent-tool-plane">{t.primary}<span aria-hidden="true">→</span></a>
       <a class="button button-secondary" href={docsHref}>{t.secondary}</a>
     </div>
-    <div class="hero-facts" aria-label="Agent authority properties">
+    <div class="hero-facts" aria-label={zh ? 'Realmroot 工具平面属性' : 'Realmroot tool plane properties'}>
       {t.facts.map((fact) => <span>{fact}</span>)}
     </div>
   </div>
 
-  <div class="agent-passport" aria-label="Durable Agent identity and authority request">
-    <p class="passport-label">{t.passport.label}</p>
-    <div class="passport-stage">
-      <div class="host-stack">
-        <strong>{t.passport.hosts}</strong>
-        {t.passport.hostNames.map((host, index) => (
-          <span><i class={`host-mark mark-${index + 1}`} aria-hidden="true"></i>{host}</span>
-        ))}
-      </div>
-      <div class="identity-card">
-        <div class="identity-card-head">
-          <small>{t.passport.identity}</small>
-          <i class="root-mark" aria-hidden="true"></i>
-        </div>
-        <h2>{t.passport.name}</h2>
-        <dl>
-          <dt>{t.passport.issuer}</dt>
-          <dd>{t.passport.issuerValue}</dd>
-          <dt>{t.passport.subject}</dt>
-          <dd>{t.passport.subjectValue}</dd>
-        </dl>
-      </div>
-      <div class="identity-proof"><i></i><span>{t.passport.verified}</span><b>VERIFIED</b></div>
-      <div class="request-card">
-        <div>
-          <strong>{t.passport.request}</strong>
-          <span>{t.passport.status}</span>
-        </div>
-        <dl>
-          <div><dt>{t.passport.resource}</dt><dd>Knowledge API</dd></div>
-          <div><dt>{t.passport.scope}</dt><dd>articles:read</dd></div>
-          <div><dt>{t.passport.lifetime}</dt><dd>15 minutes</dd></div>
-        </dl>
-      </div>
-    </div>
-  </div>
+  <figure class="relationship-visual">
+    <img
+      src="/realmroot-agent-apis.svg"
+      width="1400"
+      height="900"
+      alt={t.map.label}
+      fetchpriority="high"
+    />
+  </figure>
 </section>
 
-<section class="authority-section" id="authority">
+<section class="authority-section" id="problem">
   <div class="section-shell">
     <div class="authority-heading">
-      <h2 class="heading-lines">{t.authorityTitle.map((line) => <span>{line}</span>)}</h2>
-      <p><PhraseText locale={locale} text={t.authorityNote} /></p>
+      <h2 class="heading-lines">{t.questionsTitle.map((line) => <span>{line}</span>)}</h2>
+      <p><PhraseText locale={locale} text={t.questionsNote} /></p>
     </div>
     <div class="authority-steps">
-      {t.flow.map(([title, body], index) => (
+      {t.questions.map(([title, body], index) => (
         <article>
           <span>0{index + 1}</span>
           <h3>{title}</h3>
@@ -264,15 +231,15 @@ const t = zh
   </div>
 </section>
 
-<section class="distinction-section section" id="product">
+<section class="distinction-section section" id="agent-tool-plane">
   <div class="section-shell">
     <div class="section-intro">
-      <p class="eyebrow"><span></span>{t.distinctionEyebrow}</p>
-      <h2 class="heading-lines">{t.distinctionTitle.map((line) => <span>{line}</span>)}</h2>
-      <p><PhraseText locale={locale} text={t.distinctionBody} /></p>
+      <p class="eyebrow"><span></span>{t.planeEyebrow}</p>
+      <h2 class="heading-lines">{t.planeTitle.map((line) => <span>{line}</span>)}</h2>
+      <p><PhraseText locale={locale} text={t.planeBody} /></p>
     </div>
     <div class="distinction-grid">
-      {t.distinctions.map((item) => (
+      {t.planeValues.map((item) => (
         <article>
           <span>{item.number}</span>
           <h3>{item.title}</h3>
@@ -284,63 +251,71 @@ const t = zh
   </div>
 </section>
 
-<section class="grant-section section">
-  <div class="section-shell grant-layout">
-    <div class="grant-copy">
-      <p class="eyebrow light"><span></span>{t.grantEyebrow}</p>
-      <h2 class="heading-lines">{t.grantTitle.map((line) => <span>{line}</span>)}</h2>
-      <p><PhraseText locale={locale} text={t.grantBody} /></p>
-      <a class="text-link light-link" href={`${docsHref}concepts/agent-authority/`}>{zh ? '阅读 Agent 授权模型' : 'Read the Agent authority model'} →</a>
+<section class="layer-section section" id="trust">
+  <div class="section-shell layer-layout">
+    <div class="layer-copy">
+      <p class="eyebrow light"><span></span>{t.layersEyebrow}</p>
+      <h2 class="heading-lines">{t.layersTitle.map((line) => <span>{line}</span>)}</h2>
+      <p><PhraseText locale={locale} text={t.layersBody} /></p>
+      <strong class="layer-outcome">{t.outcome}</strong>
     </div>
-    <div class="grant-ledger">
-      <div class="ledger-head">
-        <strong>{t.ledger.title}</strong>
-        <span>GRANT ACTIVE</span>
-      </div>
-      <div class="principal-row">
-        <div><small>{t.ledger.agent}</small><strong>Research Agent</strong></div>
-        <span>≠</span>
-        <div><small>{t.ledger.controller}</small><strong>Product operator</strong></div>
-      </div>
-      <dl class="grant-details">
-        <div><dt>Resource</dt><dd>{t.ledger.resource}</dd></div>
-        <div><dt>Scopes</dt><dd>{t.ledger.scopes.map((scope) => <code>{scope}</code>)}</dd></div>
-        <div><dt>Lifetime</dt><dd><code>{t.ledger.lifetime}</code></dd></div>
-      </dl>
-      <div class="grant-status">
-        <span>✓ {t.ledger.approved}</span>
-        <span>→ {t.ledger.issued}</span>
-      </div>
+    <div class="product-layers" aria-label={zh ? 'Realmroot 两层产品结构' : 'Realmroot two-layer product structure'}>
+      <article class="tool-layer">
+        <small>{t.toolLayer.index}</small>
+        <div class="layer-title-row"><i class="root-mark" aria-hidden="true"></i><strong>{t.toolLayer.name}</strong></div>
+        <p><PhraseText locale={locale} text={t.toolLayer.detail} /></p>
+        <div>{t.toolLayer.items.map((item) => <span>{item}</span>)}</div>
+      </article>
+      <div class="layer-connection" aria-hidden="true"><i></i><i></i><i></i></div>
+      <article class="trust-layer">
+        <small>{t.trustLayer.index}</small>
+        <strong>{t.trustLayer.name}</strong>
+        <p><PhraseText locale={locale} text={t.trustLayer.detail} /></p>
+        <div>{t.trustLayer.items.map((item) => <span>{item}</span>)}</div>
+      </article>
     </div>
   </div>
 </section>
 
-<section class="realm-section section" id="architecture">
+<section class="boundary-section section" id="architecture">
   <div class="section-shell">
-    <div class="realm-layout">
-      <div class="realm-copy">
-        <p class="eyebrow"><span></span>{t.realmEyebrow}</p>
-        <h2 class="heading-lines">{t.realmTitle.map((line) => <span>{line}</span>)}</h2>
-        <p><PhraseText locale={locale} text={t.realmBody} /></p>
-        <div class="realm-boundary-facts">
-          {t.boundary.map((item) => <span>{item}</span>)}
-        </div>
-      </div>
-      <div class="actor-map">
-          <div class="actor-root"><i class="root-mark" aria-hidden="true"></i><strong>Realmroot</strong><span>{zh ? '信任根' : 'Identity root'}</span></div>
-        <div class="actor-grid">
-          {t.realmActors.map(([actor, body]) => (
-            <article>
-              <span>{actor}</span>
-              <p><PhraseText locale={locale} text={body} /></p>
-            </article>
-          ))}
-        </div>
-      </div>
+    <div class="section-intro boundary-intro">
+      <p class="eyebrow"><span></span>{t.boundaryEyebrow}</p>
+      <h2 class="heading-lines">{t.boundaryTitle.map((line) => <span>{line}</span>)}</h2>
+      <p><PhraseText locale={locale} text={t.boundaryBody} /></p>
+    </div>
+    <div class="boundary-map">
+      <article>
+        <div class="boundary-card-head"><i class="root-mark" aria-hidden="true"></i><strong>{t.realmrootOwns}</strong></div>
+        <ul>{t.realmrootItems.map((item) => <li>{item}</li>)}</ul>
+      </article>
+      <div class="boundary-direct"><span>AUTHORITY</span><i aria-hidden="true">→</i><strong>{t.direct}</strong></div>
+      <article>
+        <div class="boundary-card-head"><i class="api-mark" aria-hidden="true">API</i><strong>{t.resourceOwns}</strong></div>
+        <ul>{t.resourceItems.map((item) => <li>{item}</li>)}</ul>
+      </article>
     </div>
     <div class="standards-strip">
       <strong><PhraseText locale={locale} text={t.standardsTitle} /></strong>
       <div>{t.standards.map((standard) => <span>{standard}</span>)}</div>
+    </div>
+  </div>
+</section>
+
+<section class="participant-section section">
+  <div class="section-shell">
+    <div class="participant-heading">
+      <p class="eyebrow"><span></span>{t.valueEyebrow}</p>
+      <h2 class="heading-lines">{t.valueTitle.map((line) => <span>{line}</span>)}</h2>
+    </div>
+    <div class="participant-grid">
+      {t.participants.map(([name, body], index) => (
+        <article>
+          <span>0{index + 1}</span>
+          <h3>{name}</h3>
+          <p><PhraseText locale={locale} text={body} /></p>
+        </article>
+      ))}
     </div>
   </div>
 </section>
@@ -376,7 +351,7 @@ const t = zh
 <section class="final-cta">
   <div class="section-shell final-cta-inner">
     <div>
-      <p class="eyebrow light"><span></span>One realm. Every actor. Explicit authority.</p>
+      <p class="eyebrow light"><span></span>{t.finalEyebrow}</p>
       <h2 class="heading-lines">{t.finalTitle.map((line) => <span>{line}</span>)}</h2>
       <p><PhraseText locale={locale} text={t.finalBody} /></p>
     </div>

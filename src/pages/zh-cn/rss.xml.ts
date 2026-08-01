@@ -9,7 +9,7 @@ export async function GET(context: APIContext) {
 
   return rss({
     title: 'Realmroot 博客',
-    description: '面向用户、应用与 Agent 的身份与委托授权基础设施。',
+    description: '让每个 API 都能为 Agent 所用：关于 Agent 工具平面与信任基础的文章。',
     site: context.site ?? 'https://realmroot.dev',
     items: posts.map((post) => ({
       title: post.data.title,

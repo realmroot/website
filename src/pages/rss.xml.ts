@@ -9,7 +9,7 @@ export async function GET(context: APIContext) {
 
   return rss({
     title: 'Realmroot Blog',
-    description: 'Identity and delegated access for people, apps, and agents.',
+    description: 'Every API, Agent-ready. Notes on the Agent tool plane and its trust foundation.',
     site: context.site ?? 'https://realmroot.dev',
     items: posts.map((post) => ({
       title: post.data.title,
@@ -19,4 +19,3 @@ export async function GET(context: APIContext) {
     })),
   });
 }
-

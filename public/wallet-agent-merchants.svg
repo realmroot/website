@@ -1,0 +1,215 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 820" role="img" aria-labelledby="title description">
+  <title id="title">Agent calls paid APIs directly and uses Wallet for x402 authorization</title>
+  <desc id="description">Paid business APIs and the Wallet API are registered in Realmroot. The Agent discovers and calls the business APIs directly. When a service returns a payment requirement, the Agent asks Wallet to authorize the payment, retries the business API with the returned signature, and sends the payment response back to Wallet for confirmation. Gloria AI News, DEX Screener, and AIXBT Agent are shown as example paid services.</desc>
+
+  <defs>
+    <linearGradient id="canvas-fill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B292B"/>
+      <stop offset=".48" stop-color="#102F32"/>
+      <stop offset="1" stop-color="#0A2426"/>
+    </linearGradient>
+    <linearGradient id="wallet-fill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4FD1D0"/>
+      <stop offset=".52" stop-color="#007B83"/>
+      <stop offset="1" stop-color="#005F66"/>
+    </linearGradient>
+    <linearGradient id="panel-fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#15383B"/>
+      <stop offset="1" stop-color="#0A2426"/>
+    </linearGradient>
+    <radialGradient id="field-glow">
+      <stop offset="0" stop-color="#4FD1D0" stop-opacity=".2"/>
+      <stop offset=".58" stop-color="#007B83" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#007B83" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dot-field" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#E7F6F6" opacity=".08"/>
+    </pattern>
+    <filter id="soft-glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+    <marker id="arrow-light" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1 1 9 5 1 9" fill="none" stroke="#E7F6F6" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
+    </marker>
+    <marker id="arrow-aqua" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1 1 9 5 1 9" fill="none" stroke="#4FD1D0" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
+    </marker>
+    <style>
+      .control-flow { animation: control-flow 9s linear infinite; }
+      .payment-flow { animation: payment-flow 7s linear infinite; }
+      .orbit-slow { animation: orbit-slow 38s linear infinite; transform-origin: 595px 492px; }
+      .orbit-reverse { animation: orbit-reverse 30s linear infinite; transform-origin: 595px 492px; }
+      .signal-pulse { animation: signal-pulse 3.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+      @keyframes control-flow { to { stroke-dashoffset: -52; } }
+      @keyframes payment-flow { to { stroke-dashoffset: -44; } }
+      @keyframes orbit-slow { to { transform: rotate(360deg); } }
+      @keyframes orbit-reverse { to { transform: rotate(-360deg); } }
+      @keyframes signal-pulse { 50% { opacity: .42; transform: scale(.72); } }
+      @media (prefers-reduced-motion: reduce) {
+        .control-flow, .payment-flow, .orbit-slow, .orbit-reverse, .signal-pulse { animation: none; }
+      }
+    </style>
+  </defs>
+
+  <rect width="1300" height="820" fill="url(#canvas-fill)"/>
+  <rect width="1300" height="820" fill="url(#dot-field)"/>
+  <ellipse cx="600" cy="500" rx="440" ry="375" fill="url(#field-glow)"/>
+  <path d="M0 760c222-86 374 39 580 9s315-127 499-91 228 91 321 57" fill="none" stroke="#4FD1D0" stroke-opacity=".055" stroke-width="2"/>
+  <path d="M0 803c236-70 389 42 593 18s304-104 480-76 238 81 327 60" fill="none" stroke="#E7F6F6" stroke-opacity=".035"/>
+
+  <!-- Poster heading -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" font-weight="700" letter-spacing="2.4">
+    <text x="62" y="64" fill="#4FD1D0">WALLET / AGENT PAYMENT NETWORK</text>
+    <text x="1238" y="64" fill="#A8C0C1" text-anchor="end">POLICY BEFORE EVERY SIGNATURE</text>
+  </g>
+  <path d="M62 88h1176" stroke="#DDE5E5" stroke-opacity=".18"/>
+  <path d="M62 88h162" stroke="#4FD1D0" stroke-width="3"/>
+
+  <!-- Agent -->
+  <g aria-label="Agent">
+    <text x="62" y="142" fill="#F7FFFF" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="-1">AGENT</text>
+    <text x="64" y="165" fill="#8DA8A9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" font-weight="700" letter-spacing="1.8">REQUESTS PAID CAPABILITIES</text>
+    <path d="M62 202h34l18-18h154l18 18h34v190h-34l-18 18H114l-18-18H62Z" fill="url(#panel-fill)" stroke="#DDE5E5" stroke-opacity=".5" stroke-width="1.5"/>
+    <path d="M78 218h226M78 374h226" stroke="#DDE5E5" stroke-opacity=".14"/>
+    <path d="M62 238v-36h36M320 238v-36h-36M62 356v36h36M320 356v36h-36" fill="none" stroke="#4FD1D0" stroke-opacity=".38" stroke-width="2"/>
+    <circle class="signal-pulse" cx="128" cy="296" r="40" fill="#4FD1D0" opacity=".1"/>
+    <circle cx="128" cy="296" r="28" fill="#007B83"/>
+    <circle cx="128" cy="296" r="10" fill="#4FD1D0"/>
+    <path d="M149 277 178 252h24M156 296h46M149 315l29 25h24" fill="none" stroke="#E7F6F6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/>
+    <circle cx="210" cy="252" r="7" fill="#102F32" stroke="#E7F6F6" stroke-width="2.5"/>
+    <rect x="203" y="290" width="14" height="12" rx="6" fill="#E7F6F6"/>
+    <circle cx="210" cy="340" r="7" fill="#102F32" stroke="#E7F6F6" stroke-width="2.5"/>
+    <g fill="#E7F6F6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" font-weight="700" letter-spacing="1.2">
+      <text x="242" y="258">REQUEST</text>
+      <text x="242" y="302">AUTHORIZE</text>
+      <text x="242" y="346">RETRY</text>
+    </g>
+    <g fill="#4FD1D0"><circle cx="230" cy="254" r="3"/><circle cx="230" cy="298" r="3"/><circle cx="230" cy="342" r="3"/></g>
+  </g>
+
+  <!-- Wallet protagonist -->
+  <g aria-label="Wallet payment boundary">
+    <circle class="orbit-slow" cx="595" cy="492" r="218" fill="none" stroke="#4FD1D0" stroke-opacity=".13" stroke-width="2" stroke-dasharray="2 12"/>
+    <circle class="orbit-reverse" cx="595" cy="492" r="181" fill="none" stroke="#DDE5E5" stroke-opacity=".22" stroke-width="2" stroke-dasharray="48 16 8 16"/>
+    <circle cx="595" cy="492" r="142" fill="#4FD1D0" opacity=".14" filter="url(#soft-glow)"/>
+    <g fill="#4FD1D0">
+      <circle class="signal-pulse" cx="595" cy="274" r="5"/>
+      <circle class="signal-pulse" cx="769" cy="382" r="4"/>
+      <circle class="signal-pulse" cx="425" cy="601" r="4"/>
+    </g>
+
+    <path d="M475 310h270l34 34v314H441V344Z" fill="url(#wallet-fill)" stroke="#4FD1D0" stroke-opacity=".72" stroke-width="2"/>
+    <path d="M475 310h270l34 34" fill="none" stroke="#E7F6F6" stroke-opacity=".42" stroke-width="2"/>
+
+    <g transform="translate(473 346)">
+      <rect width="62" height="52" rx="14" fill="#E7F6F6"/>
+      <path d="M15 13h30c5 0 8 3 8 8v21H15c-5 0-8-3-8-8V21c0-5 3-8 8-8Z" fill="none" stroke="#007B83" stroke-width="3"/>
+      <path d="M39 25h14v11H39c-4 0-6-2-6-5.5S35 25 39 25Z" fill="#007B83"/>
+      <circle cx="42" cy="30.5" r="2" fill="#E7F6F6"/>
+    </g>
+    <text x="555" y="379" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="720" letter-spacing="-1">WALLET</text>
+    <text x="555" y="401" fill="#E7F6F6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9.2" font-weight="750" letter-spacing="1.05">OWNER-CONTROLLED PAYMENT BOUNDARY</text>
+
+    <path d="M473 425h274" stroke="#E7F6F6" stroke-opacity=".32"/>
+    <text x="473" y="456" fill="#E7F6F6" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="620">AVAILABLE BALANCE</text>
+    <text x="473" y="503" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="720" letter-spacing="-1.5">2,480.00</text>
+    <text x="677" y="502" fill="#E7F6F6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" font-weight="750" letter-spacing="1.4">USDC</text>
+
+    <text x="473" y="535" fill="#E7F6F6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" font-weight="700" letter-spacing="1.3">AGENT BUDGET · 182.40 / 795.00</text>
+    <rect x="473" y="550" width="244" height="8" rx="4" fill="#005F66"/>
+    <rect x="473" y="550" width="56" height="8" rx="4" fill="#E7F6F6"/>
+    <circle cx="529" cy="554" r="7" fill="#4FD1D0" stroke="#E7F6F6" stroke-width="2"/>
+
+    <g transform="translate(473 582)">
+      <rect width="72" height="44" rx="8" fill="#E7F6F6" fill-opacity=".1" stroke="#E7F6F6" stroke-opacity=".2"/>
+      <rect x="86" width="72" height="44" rx="8" fill="#E7F6F6" fill-opacity=".1" stroke="#E7F6F6" stroke-opacity=".2"/>
+      <rect x="172" width="72" height="44" rx="8" fill="#E7F6F6" fill-opacity=".1" stroke="#E7F6F6" stroke-opacity=".2"/>
+      <g fill="#FFFFFF" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" font-weight="750" letter-spacing="1" text-anchor="middle">
+        <text x="36" y="27">BUDGET</text><text x="122" y="27">POLICY</text><text x="208" y="27">SETTLE</text>
+      </g>
+      <g fill="#4FD1D0"><circle cx="36" cy="10" r="3"/><circle cx="122" cy="10" r="3"/><circle cx="208" cy="10" r="3"/></g>
+    </g>
+    <text x="595" y="683" fill="#4FD1D0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" font-weight="750" letter-spacing="1.7" text-anchor="middle">KEYS NEVER REACH THE AGENT</text>
+  </g>
+
+  <!-- Agent calls Wallet for authorization and settlement confirmation -->
+  <g aria-label="Agent calls Wallet to authorize and confirm x402 payments">
+    <path d="M250 410C286 455 357 498 441 520" fill="none" stroke="#E7F6F6" stroke-linecap="round" stroke-width="2.5" marker-end="url(#arrow-light)"/>
+    <rect x="220" y="431" width="210" height="40" rx="20" fill="#0C2729" stroke="#DDE5E5" stroke-opacity=".45"/>
+    <text x="325" y="456" fill="#E7F6F6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" font-weight="750" letter-spacing="1.05" text-anchor="middle">x402 AUTHORIZE + CONFIRM</text>
+  </g>
+
+  <!-- Realmroot identity and trust -->
+  <g aria-label="Realmroot identity and delegated authority">
+    <path d="M76 608h302l22 22v142H76Z" fill="url(#panel-fill)" stroke="#4FD1D0" stroke-opacity=".45" stroke-width="1.5"/>
+    <path d="M76 608h302l22 22" fill="none" stroke="#4FD1D0" stroke-width="2.5"/>
+    <g transform="translate(98 640)">
+      <rect width="50" height="50" rx="14" fill="#E7F6F6"/>
+      <image href="data:image/png;base64,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" x="6" y="7" width="38" height="36" preserveAspectRatio="xMidYMid meet"/>
+    </g>
+    <text x="166" y="662" fill="#F7FFFF" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">REALMROOT</text>
+    <text x="166" y="686" fill="#4FD1D0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9.2" font-weight="750" letter-spacing="1.05">IDENTITY + DELEGATED AUTHORITY</text>
+    <path d="M98 712h280" stroke="#DDE5E5" stroke-opacity=".15"/>
+    <g fill="#A8C0C1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" font-weight="700" letter-spacing="1.2">
+      <text x="112" y="742">AGENT OIDC</text><text x="228" y="742">DPoP</text><text x="299" y="742">GRANTS</text>
+    </g>
+    <g fill="#4FD1D0"><circle cx="99" cy="738" r="3"/><circle cx="215" cy="738" r="3"/><circle cx="286" cy="738" r="3"/></g>
+
+    <path class="control-flow" d="M160 410V608" fill="none" stroke="#4FD1D0" stroke-linecap="round" stroke-width="2" stroke-dasharray="4 8" marker-end="url(#arrow-aqua)"/>
+    <rect x="78" y="486" width="204" height="38" rx="19" fill="#0C2729" stroke="#4FD1D0" stroke-opacity=".45"/>
+    <text x="180" y="510" fill="#4FD1D0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" font-weight="750" letter-spacing="1.2" text-anchor="middle">DISCOVER + AUTHORIZE</text>
+    <path class="control-flow" d="M400 676C430 672 443 624 465 592" fill="none" stroke="#4FD1D0" stroke-linecap="round" stroke-width="2.5" stroke-dasharray="4 8" marker-end="url(#arrow-aqua)"/>
+  </g>
+
+  <!-- Agent invokes the registered business APIs directly -->
+  <g aria-label="Agent calls paid business APIs directly">
+    <path d="M320 252C390 252 405 180 490 180H850V668" fill="none" stroke="#F7FFFF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/>
+    <path d="M850 232v436" fill="none" stroke="#F7FFFF" stroke-linecap="round" stroke-width="2"/>
+    <path class="payment-flow" d="M850 232h150M850 450h150M850 668h150" fill="none" stroke="#F7FFFF" stroke-linecap="round" stroke-width="2.5" stroke-dasharray="32 12"/>
+    <path d="M850 232h150" fill="none" stroke="#F7FFFF" stroke-linecap="round" stroke-width="2.5" marker-end="url(#arrow-light)"/>
+    <path d="M850 450h150" fill="none" stroke="#F7FFFF" stroke-linecap="round" stroke-width="2.5" marker-end="url(#arrow-light)"/>
+    <path d="M850 668h150" fill="none" stroke="#F7FFFF" stroke-linecap="round" stroke-width="2.5" marker-end="url(#arrow-light)"/>
+    <g fill="#102F32" stroke="#E7F6F6" stroke-width="2"><circle cx="850" cy="232" r="5"/><circle cx="850" cy="450" r="5"/><circle cx="850" cy="668" r="5"/></g>
+    <rect x="570" y="157" width="244" height="40" rx="20" fill="#0C2729" stroke="#DDE5E5" stroke-opacity=".45"/>
+    <text x="692" y="182" fill="#F7FFFF" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" font-weight="750" letter-spacing="1.35" text-anchor="middle">CALL BUSINESS APIs DIRECTLY</text>
+  </g>
+
+  <!-- Realmroot registration bus: merchant APIs register into the Realmroot control plane -->
+  <g aria-label="Merchant APIs registered in Realmroot">
+    <path class="control-flow" d="M1260 232V790H223V772" fill="none" stroke="#4FD1D0" stroke-linecap="round" stroke-width="2" stroke-dasharray="4 9" marker-end="url(#arrow-aqua)"/>
+    <path d="M1220 232h40M1220 450h40M1220 668h40" fill="none" stroke="#4FD1D0" stroke-linecap="round" stroke-width="2" stroke-dasharray="4 8"/>
+    <g fill="#102F32" stroke="#4FD1D0" stroke-width="2"><circle cx="1260" cy="232" r="4"/><circle cx="1260" cy="450" r="4"/><circle cx="1260" cy="668" r="4"/></g>
+    <rect x="560" y="743" width="340" height="46" rx="23" fill="#0C2729" stroke="#4FD1D0" stroke-opacity=".55"/>
+    <text x="730" y="772" fill="#4FD1D0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="750" letter-spacing="1.25" text-anchor="middle">APIs REGISTERED IN REALMROOT</text>
+  </g>
+
+  <!-- Example paid service: Gloria AI News -->
+  <g aria-label="Gloria AI News paid API registered in Realmroot">
+    <path d="M1000 196h204l16 16v56h-220Z" fill="url(#panel-fill)" stroke="#DDE5E5" stroke-opacity=".32" stroke-width="1.5"/>
+    <circle cx="1030" cy="232" r="15" fill="#4FD1D0" fill-opacity=".1" stroke="#4FD1D0" stroke-opacity=".55"/>
+    <path d="M1022 223h16v18h-16Zm4 5h8m-8 4h8m-8 4h6" fill="none" stroke="#4FD1D0" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+    <text x="1058" y="226" fill="#F7FFFF" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="680">Gloria AI News</text>
+    <text x="1058" y="247" fill="#8DA8A9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="8.2" font-weight="700" letter-spacing=".9">NEWS INTELLIGENCE API</text>
+    <circle cx="1000" cy="232" r="4" fill="#F7FFFF"/><circle cx="1220" cy="232" r="4" fill="#4FD1D0"/>
+  </g>
+
+  <!-- Example paid service: DEX Screener -->
+  <g aria-label="DEX Screener paid API registered in Realmroot">
+    <path d="M1000 414h204l16 16v56h-220Z" fill="url(#panel-fill)" stroke="#DDE5E5" stroke-opacity=".32" stroke-width="1.5"/>
+    <circle cx="1030" cy="450" r="15" fill="#4FD1D0" fill-opacity=".1" stroke="#4FD1D0" stroke-opacity=".55"/>
+    <path d="M1020 458v-9m7 9v-16m7 16v-7m7 7v-22" fill="none" stroke="#4FD1D0" stroke-linecap="round" stroke-width="1.8"/>
+    <text x="1058" y="444" fill="#F7FFFF" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="680">DEX Screener</text>
+    <text x="1058" y="465" fill="#8DA8A9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="8.2" font-weight="700" letter-spacing=".9">LIVE DEX DATA API</text>
+    <circle cx="1000" cy="450" r="4" fill="#F7FFFF"/><circle cx="1220" cy="450" r="4" fill="#4FD1D0"/>
+  </g>
+
+  <!-- Example paid service: AIXBT Agent -->
+  <g aria-label="AIXBT Agent paid API registered in Realmroot">
+    <path d="M1000 632h204l16 16v56h-220Z" fill="url(#panel-fill)" stroke="#DDE5E5" stroke-opacity=".32" stroke-width="1.5"/>
+    <circle cx="1030" cy="668" r="15" fill="#4FD1D0" fill-opacity=".1" stroke="#4FD1D0" stroke-opacity=".55"/>
+    <circle cx="1023" cy="665" r="3.5" fill="none" stroke="#4FD1D0" stroke-width="1.4"/><circle cx="1037" cy="661" r="3.5" fill="none" stroke="#4FD1D0" stroke-width="1.4"/><circle cx="1034" cy="675" r="3.5" fill="none" stroke="#4FD1D0" stroke-width="1.4"/><path d="m1027 664 7-2m2 3-1 7m-4 1-6-6" stroke="#4FD1D0" stroke-width="1.4"/>
+    <text x="1058" y="662" fill="#F7FFFF" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="680">AIXBT Agent</text>
+    <text x="1058" y="683" fill="#8DA8A9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="8.2" font-weight="700" letter-spacing=".9">CRYPTO INTELLIGENCE API</text>
+    <circle cx="1000" cy="668" r="4" fill="#F7FFFF"/><circle cx="1220" cy="668" r="4" fill="#4FD1D0"/>
+  </g>
+</svg>

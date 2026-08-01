@@ -1,30 +1,44 @@
 ---
 title: Realmroot 是什么？
-description: 面向单个产品 Realm 的可部署身份与委托授权根。
+description: 把现有 OpenAPI 服务转化为 Agent 可安全发现与调用能力的工具平面。
 ---
 
-Realmroot 为产品团队提供自己的身份根：一个用户池、一个 Issuer、一个管理 Console
-与一个托管账户中心。
+**让每个 API，都能为 Agent 所用。**
 
-当多个应用应该共享账户与管理员时，它们可以共享同一个 Realm。这个 Realm
-也为 Agent 提供稳定身份，以及由控制者批准、绑定精确 Scope 的原生或外部 API 访问。
+Realmroot 把现有 OpenAPI 服务转化为 Agent 可安全发现与调用的工具。资源团队继续维护
+自己的 API、契约与权限校验，无需再建设和维护一套 Agent 专用集成。
 
-## 包含的能力
+最终形成一条完整的操作链路：Agent 找到正确的工具，获得完成任务所需的精确委托权限，
+然后直接调用原始服务。
 
-- 托管登录、注册、密码恢复与 OAuth 同意
-- 管理凭据、MFA、Passkey、会话与关联账户的账户中心
-- 配置应用、用户、策略、角色、API 资源与品牌的管理 Console
-- 面向产品应用的标准 OIDC 集成
-- 带 OpenAPI 契约的资源化管理 API
-- 持久 Agent 身份与委托 API 访问
+## 一个产品，两层价值
 
-## 核心规则
+### Agent Tool Plane
 
-一个 Realmroot 部署就是一个身份 Realm。
+- 注册现有 API 资源与实时 OpenAPI 契约
+- 在任务发生时发现可用资源与操作
+- 通过 Realmroot Skill 与 Restish 调用任意已注册资源
+- 新资源加入时自然扩展 Agent 能力，无需新增 Agent 专用后端代码
 
-产品可以在 Realm 内注册多个 OIDC Application。如果两个产品需要独立的用户、
-管理员、Issuer URL 或安全策略，就部署新的 Realmroot 实例。
+### Identity and Trust Infrastructure
 
-从[快速开始](/zh-cn/docs/getting-started/quick-start/)继续，部署 Realm、
-创建首位管理员并连接产品应用。
+身份是地基，不是最终结果。Realmroot 提供稳定 Agent 身份、控制者关系、Grant 审批、
+Token 协调、撤销与审计，让工具调用具备可信基础。
+
+同一个 Realm 也为用户与应用提供托管认证、OIDC、账户管理与管理 Console。
+
+工具没有信任就不安全；身份没有工具也无法完成任务。Realmroot 把两层价值组合起来：
+
+> **广泛发现。精确授权。直接调用。**
+
+## 职责边界
+
+Realmroot 负责注册与发现、Agent 身份、委托 Grant 生命周期与短期 Token 协调。
+它不是 HTTP 代理，也不会复制业务权限。
+
+资源服务始终是最终授权边界，继续负责 API、OpenAPI 契约、Scope 语义、对象级权限、
+数据与业务规则，以及最终 Allow / Deny 决定。
+
+从[快速开始](/zh-cn/docs/getting-started/quick-start/)继续，部署 Realm、创建首位管理员，
+并注册第一个产品应用。
 

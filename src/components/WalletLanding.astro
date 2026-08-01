@@ -15,15 +15,7 @@ const t = zh
       lead: '一个属于用户的钱包，为每个 Agent 设置明确、可撤销的支付边界。通过 Base 上的标准 x402 完成支付。',
       primary: '打开 Wallet',
       secondary: '进入 Sandbox',
-      trust: ['不向 Agent 暴露私钥', '每次支付验证 DPoP', '独立 Agent 预算'],
-      preview: {
-        balance: '可用余额',
-        protected: 'Base Mainnet · 受保护',
-        policy: '有效支付策略',
-        spent: '已使用',
-        budget: '预算',
-        settled: '刚刚结算',
-      },
+      visualLabel: '业务 APIs 与 Wallet API 注册到 Realmroot；Agent 直接调用业务 API，并在收到支付要求后调用 Wallet 完成 x402 授权与结算确认',
       controlsEyebrow: 'Spending controls',
       controlsTitle: ['每个 Agent，', '自己的支付边界。'],
       controlsBody: '身份建立之后，支付权限仍然需要单独决定。所有限制都会在每次签名前重新检查。',
@@ -58,15 +50,7 @@ const t = zh
       lead: 'One wallet owned by the user. Explicit, revocable spending boundaries for every Agent. Standard x402 payments on Base.',
       primary: 'Open Wallet',
       secondary: 'Explore Sandbox',
-      trust: ['No private keys exposed', 'DPoP on every payment', 'Per-Agent budgets'],
-      preview: {
-        balance: 'Available balance',
-        protected: 'Base Mainnet · Protected',
-        policy: 'Active spending policy',
-        spent: 'Spent',
-        budget: 'Budget',
-        settled: 'Settled just now',
-      },
+      visualLabel: 'Business APIs and the Wallet API register in Realmroot; the Agent calls business APIs directly and uses Wallet for x402 authorization and settlement confirmation when payment is required',
       controlsEyebrow: 'Spending controls',
       controlsTitle: ['Every Agent.', 'Its own payment boundary.'],
       controlsBody: 'Identity does not imply spending authority. Every restriction is checked again before every signature.',
@@ -99,76 +83,28 @@ const t = zh
 
 <section class="wallet-stage" id="wallet">
   <div class="section-shell">
-    <div class="wallet-stage-bar">
-      <div><strong>Wallet</strong><span>Agent payment control</span></div>
-      <span><i></i>{zh ? '系统正常' : 'All systems operational'}</span>
-    </div>
-
     <div class="wallet-stage-intro">
-      <div>
+      <div class="wallet-stage-copy">
         <p class="eyebrow light"><span></span>{t.eyebrow}</p>
         <h1 class="heading-lines">{t.title.map((line) => <span>{line}</span>)}</h1>
-      </div>
-      <div class="wallet-stage-brief">
-        <p><PhraseText locale={locale} text={t.lead} /></p>
-        <div class="hero-actions">
-          <a class="button button-inverted" href={site.wallet}>{t.primary}<span aria-hidden="true">↗</span></a>
-          <a class="button button-ghost-light" href={`${site.wallet}/sandbox`}>{t.secondary}</a>
+        <div class="wallet-stage-brief">
+          <p><PhraseText locale={locale} text={t.lead} /></p>
+          <div class="hero-actions">
+            <a class="button button-inverted" href={site.wallet}>{t.primary}<span aria-hidden="true">↗</span></a>
+            <a class="button button-ghost-light" href={`${site.wallet}/sandbox`}>{t.secondary}</a>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="wallet-console" aria-label={zh ? 'Wallet 产品控制台预览' : 'Wallet product control console'}>
-      <div class="wallet-console-head">
-        <span><i></i>LIVE / BASE MAINNET</span>
-        <span>wallet.realmroot.dev</span>
-        <span>UTC 14:32:08</span>
-      </div>
-      <div class="wallet-console-grid">
-        <section class="wallet-balance-panel">
-          <small>{zh ? '用户钱包' : 'OWNER WALLET'}</small>
-          <p>{t.preview.balance}</p>
-          <strong>2,480.00</strong>
-          <span>USDC</span>
-          <div class="wallet-ring" aria-label={zh ? '本月预算已使用 23%' : '23% of monthly budget used'}>
-            <i></i><span>23%</span>
-          </div>
-          <dl>
-            <div><dt>{zh ? '本月已用' : 'MONTH SPEND'}</dt><dd>$182.40</dd></div>
-            <div><dt>{zh ? '可用预算' : 'AVAILABLE'}</dt><dd>$612.60</dd></div>
-          </dl>
-        </section>
-
-        <section class="wallet-agent-panel">
-          <header><span>{zh ? 'Agent 策略' : 'AGENT POLICIES'}</span><strong>03 ACTIVE</strong></header>
-          <div class="wallet-agent-row featured">
-            <span>RA</span>
-            <div><strong>Research Agent</strong><small>api.weather.dev · x402</small></div>
-            <div><small>{zh ? '每日限额' : 'DAILY LIMIT'}</small><strong>$100</strong></div>
-          </div>
-          <div class="wallet-agent-row">
-            <span>CA</span>
-            <div><strong>Commerce Agent</strong><small>2 {zh ? '个允许商户' : 'allowed merchants'}</small></div>
-            <div><small>{zh ? '每日限额' : 'DAILY LIMIT'}</small><strong>$250</strong></div>
-          </div>
-          <div class="wallet-agent-row">
-            <span>DA</span>
-            <div><strong>Data Agent</strong><small>{zh ? '仅 Sandbox' : 'Sandbox only'}</small></div>
-            <div><small>{zh ? '每日限额' : 'DAILY LIMIT'}</small><strong>$25</strong></div>
-          </div>
-        </section>
-
-        <section class="wallet-stream-panel">
-          <header><span>{zh ? '支付事件流' : 'PAYMENT STREAM'}</span><strong>LIVE</strong></header>
-          <div><time>14:32:08</time><i class="settled"></i><p><strong>$0.025</strong><span>api.weather.dev</span></p><small>SETTLED</small></div>
-          <div><time>14:31:52</time><i class="authorized"></i><p><strong>$1.20</strong><span>maps.example</span></p><small>AUTHORIZED</small></div>
-          <div><time>14:30:17</time><i class="blocked"></i><p><strong>$84.00</strong><span>unknown origin</span></p><small>BLOCKED</small></div>
-          <div><time>14:28:44</time><i class="settled"></i><p><strong>$0.008</strong><span>data.market.dev</span></p><small>SETTLED</small></div>
-        </section>
-      </div>
-      <div class="wallet-console-foot">
-        {t.trust.map((item) => <span><i></i>{item}</span>)}
-      </div>
+      <figure class="wallet-network-visual">
+        <img
+          src="/wallet-agent-merchants.svg"
+          width="1300"
+          height="820"
+          alt={t.visualLabel}
+          fetchpriority="high"
+        />
+      </figure>
     </div>
   </div>
 </section>

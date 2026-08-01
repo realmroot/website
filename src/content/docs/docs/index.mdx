@@ -1,34 +1,53 @@
 ---
 title: What is Realmroot?
-description: A deployable identity and delegated-access root for one product realm.
+description: The Agent tool plane for turning existing OpenAPI services into secure, discoverable capabilities.
 ---
 
-Realmroot gives a product team its own identity root: one user pool, one issuer,
-one admin console, and one hosted account center.
+**Every API, Agent-ready.**
 
-Multiple applications can share a realm when they should share accounts and
-administrators. The same realm gives agents stable identities and
-controller-approved, scope-bound access to native and external API resources.
+Realmroot turns existing OpenAPI services into secure, discoverable tools for
+Agents. Resource teams keep the APIs, contracts, and enforcement they already
+operate; they do not need to build and maintain a separate Agent integration.
 
-## What it includes
+The outcome is a complete operating path: an Agent finds the right tool,
+receives the exact delegated authority it needs, and calls the original service
+directly.
 
-- Hosted sign-in, sign-up, password recovery, and OAuth consent
-- Account center for credentials, MFA, passkeys, sessions, and linked accounts
-- Admin console for applications, users, policy, roles, API resources, and branding
-- Standard OIDC integration for product applications
-- Resource-oriented management API with an OpenAPI contract
-- Durable agent identity and delegated API access
+## One product, two layers
 
-## The core rule
+### Agent Tool Plane
 
-One Realmroot deployment is one identity realm.
+- Register existing API resources and their live OpenAPI contracts
+- Discover available resources and operations at task time
+- Invoke any registered resource through the Realmroot Skill and Restish
+- Expand Agent capability as new resources join, without new Agent-specific backend code
 
-Products may register multiple OIDC applications inside that realm. When two
-products require separate users, administrators, issuer URLs, or security
-policy, deploy another Realmroot instance.
+### Identity and Trust Infrastructure
+
+Identity is the foundation, not the final outcome. Realmroot provides the
+stable Agent identity, controller relationship, grant approval, token
+coordination, revocation, and audit needed to make tool use safe.
+
+The same realm also includes hosted authentication, OIDC, account management,
+and administration for people and applications.
+
+Tools without trust are unsafe. Identity without tools does not complete a
+task. Realmroot brings both layers together:
+
+> **Discover broadly. Authorize precisely. Call directly.**
+
+## The responsibility boundary
+
+Realmroot owns registration and discovery, Agent identity, delegated grant
+lifecycle, and short-lived token coordination. It is not an HTTP proxy and
+does not copy business permissions.
+
+The resource server remains the final authorization boundary. It owns its API,
+OpenAPI contract, scope semantics, object-level permissions, data, business
+rules, and the final allow-or-deny decision.
 
 ## Start here
 
 Follow the [quick start](/docs/getting-started/quick-start/) to deploy a realm,
-create its first administrator, and connect a product application.
+create its first administrator, and register your first product application.
 
