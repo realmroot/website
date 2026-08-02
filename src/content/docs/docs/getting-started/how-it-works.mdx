@@ -1,0 +1,161 @@
+---
+title: How Realmroot works
+description: The complete path from API registration and live discovery to controller-approved, direct Agent calls.
+---
+
+Realmroot connects three parties without moving the business API into a new
+platform:
+
+| Participant | Responsibility |
+| --- | --- |
+| **Agent** | Finds a capability, selects an operation, requests least-privilege authority, and calls the API |
+| **Realmroot** | Registers resources, establishes stable Agent identity, records controller decisions, and issues or coordinates bounded credentials |
+| **Resource server** | Publishes the API contract, defines scope semantics, validates the request, and makes the final business decision |
+
+The design separates the **control path** from the **business data path**.
+
+```text
+CONTROL PATH
+Agent <── discovery / identity / approval / issuance ──> Realmroot
+
+BUSINESS DATA PATH
+Agent ───── short-lived DPoP request ─────> Resource API
+                                            └─ final allow / deny
+```
+
+Realmroot sees the authorization lifecycle. It does not proxy the protected
+operation or become the system of record for business data.
+
+## Before a task: make the capability discoverable
+
+An API team completes a one-time integration:
+
+1. Keep a stable protected `resourceUrl`.
+2. Return an RFC 8631 `service-desc` link from that URL.
+3. Publish an OpenAPI 3.x document whose protected operations use standard
+   OAuth or OIDC security requirements with scope names.
+4. Register the API Resource in Realmroot as `native` or `external`.
+5. Validate access tokens, operation scopes, DPoP binding, and local business
+   policy at the API.
+
+Realmroot reads the live contract instead of copying its operation and scope
+definitions into a second tool catalog. If the contract becomes unavailable,
+the resource can remain visible as unavailable, but new access requests and
+issuance fail closed.
+
+## During a task: discover, authorize, call
+
+### 1. Discover a capability
+
+The Agent lists Agent-visible API Resources and searches their identifiers,
+names, descriptions, and advertised scopes for the capability required by the
+user's goal.
+
+Discovery grants no business authority. It only reveals which capabilities may
+be requested.
+
+### 2. Inspect the live operation
+
+The Agent connects directly to candidate resource URLs and reads their OpenAPI
+contracts. It chooses the exact operation, arguments, and minimum scope set.
+The resource contract—not Realmroot—is authoritative for these details.
+
+### 3. Establish a stable Agent
+
+If this runtime has not enrolled with the selected realm, the adapter starts a
+hosted approval flow. A controller binds the current Host registration to a
+stable `(issuer, subject)` Agent identity.
+
+Enrollment proves which Agent is acting. It does not grant access to the
+selected business API.
+
+### 4. Request exact authority
+
+When no matching active grant exists, the Agent creates an access request for:
+
+- one stable Agent;
+- one API Resource;
+- one connected target account for an external resource, when applicable;
+- the exact scopes required by the operation;
+- a human-readable reason.
+
+Changing the resource, account, or scope set requires another decision.
+
+### 5. Let the controller decide
+
+Realmroot presents the request in a browser. The controller can approve or deny
+it and choose a one-time, limited, or persistent grant lifetime.
+
+The controller session authorizes the delegation. The Agent never borrows the
+controller's browser session or personal API credential.
+
+### 6. Issue a bounded credential
+
+The Restish adapter creates a separate P-256 DPoP key for the resource grant.
+Realmroot then issues or coordinates a short-lived, audience-bound token with
+the exact approved scopes.
+
+Raw tokens and private keys remain in adapter custody and are removed from
+normal command output.
+
+### 7. Call the original API
+
+The Agent resumes the operation against the registered resource URL. The
+adapter adds the DPoP authorization token and a fresh proof bound to the HTTP
+method, target URL, access token, and request key.
+
+Realmroot is not in this request path.
+
+### 8. Enforce locally
+
+The resource server validates the issuer, signature, token type, audience,
+expiry, operation scopes, key binding, request proof, and replay state. It then
+applies local ownership, tenant, object, state, and business rules.
+
+A cryptographically valid token is necessary but not sufficient. The resource
+server can still deny the request.
+
+## Native and external resources
+
+Both modes use the same discovery, request, approval, grant, DPoP, revocation,
+and audit model. They differ at the token issuer boundary.
+
+| | Native | External |
+| --- | --- | --- |
+| Authorization server | Realmroot | Target platform |
+| Account connection | Not required | One target account per resource and home space |
+| Final token | Realmroot-signed `at+jwt` | Target-issued DPoP token |
+| Subject | Controlling user or organization | Connected target user |
+| Actor | Stable Agent | Stable Agent |
+| Business request path | Agent → resource server | Agent → resource server |
+
+Use `native` when the product API can trust Realmroot's issuer and JWKS. Use
+`external` when a target platform must retain its users, OAuth server, tokens,
+and consent. Realmroot protects the connected user's refresh credential and
+uses standards-based OAuth flows to obtain a constrained target token; it never
+returns that refresh credential to the Agent.
+
+## Revocation and recovery
+
+Revoking an Agent, Host, grant, account connection, or credential stops new
+issuance. Realmroot also sends active external token leases to the target's
+revocation endpoint. Short credential lifetimes limit residual exposure.
+
+One compromised Host can be removed without changing the stable Agent subject.
+Recovery preserves the Agent identity while requiring new Host bindings and
+new authority decisions.
+
+## The standards underneath
+
+Realmroot composes existing standards rather than creating a proprietary Agent
+tunnel:
+
+- OpenAPI 3.x for operations and scope requirements
+- OpenID Connect and OAuth 2.0 for issuers and application integration
+- RFC 8631 for contract discovery
+- RFC 8693 for delegated actor semantics and token exchange
+- RFC 9449 DPoP for sender-constrained access tokens
+- RFC 8414, RFC 9728, RFC 7523, and RFC 7009 for external authorization
+
+Next, read the [Agent Tool Plane](/docs/concepts/agent-tool-plane/) or follow the
+[API integration guide](/docs/guides/make-an-api-agent-ready/).

@@ -1,0 +1,115 @@
+---
+title: The Agent Tool Plane
+description: How live OpenAPI contracts, Realmroot discovery, Restish, and the Realmroot Skill turn existing APIs into composable Agent capabilities.
+---
+
+The Agent Tool Plane is the shared route from an existing API to a capability
+an Agent can discover and use safely.
+
+```text
+API + OpenAPI + local enforcement
+              ↓
+Realmroot registration, discovery, identity, and delegated authorization
+              ↓
+Restish generic CLI + Realmroot Skill
+              ↓
+Agent discovery and direct invocation
+```
+
+It is a result layer built on Realmroot's identity and trust foundation. The
+goal is not simply to authenticate an Agent; it is to let the Agent complete a
+real operation against the original service.
+
+## Why another integration surface is expensive
+
+An API already has operation semantics, request and response schemas, version
+history, security requirements, documentation, and production enforcement.
+Building a separate Agent API, MCP server, or custom CLI for every service can
+duplicate part of that contract.
+
+The initial adapter is only the visible cost. The larger cost is keeping it
+aligned as the API changes, applying security fixes twice, supporting multiple
+Agent runtimes, and explaining which surface is authoritative.
+
+Realmroot reuses the contract that already exists.
+
+## Live discovery, not a copied catalog
+
+Resource teams register a stable protected resource URL. That URL advertises
+its OpenAPI document through a standard `service-desc` link.
+
+At task time, an Agent can discover registered resources and inspect the live
+contract. Realmroot derives requestable scopes from standard OpenAPI security
+requirements. A scope written only into Realmroot configuration or descriptive
+text is not requestable.
+
+This keeps resource-server code and contract changes as the source of truth.
+Stale or unreachable contracts fail closed at request, approval, and issuance
+boundaries.
+
+## Generic invocation, not one adapter per API
+
+Restish turns standard OpenAPI operations into a consistent CLI surface. The
+Realmroot Skill gives the Agent the operating procedure:
+
+1. translate the user's goal into a capability;
+2. discover and inspect candidate resources;
+3. select the operation and minimum scopes;
+4. reuse an exact grant or request controller approval;
+5. obtain a protected credential;
+6. execute the target operation and return the result.
+
+The Skill teaches the process. The live API contract supplies the commands,
+arguments, and scope requirements.
+
+## Capability compounds as resources join
+
+The Agent runtime does not need every tool compiled into its client or prompt.
+Registering another compatible resource expands the capability network. The
+same Agent operating procedure works across storage, support, data, payment,
+infrastructure, and other private APIs.
+
+This changes the scaling unit:
+
+- the API team integrates the resource once;
+- Agent runtimes learn one discovery and authority procedure;
+- each new resource becomes available to every authorized Agent without new
+  Agent-specific backend code.
+
+## Discovery is broader than authority
+
+An Agent may inspect the capability catalog without holding business scopes.
+It requests authority only after selecting an operation. A grant is bound to
+one resource, optional account, exact scope set, reason, and lifetime.
+
+This supports broad discovery while keeping execution least-privilege.
+
+## Direct calls preserve the service boundary
+
+Once approved, the Agent calls the original resource server with a short-lived,
+DPoP-bound credential. Business payloads do not pass through Realmroot.
+
+The resource server continues to own object-level permissions, tenancy, data,
+business rules, and the final decision. This prevents the tool plane from
+becoming a central proxy or a second business permission engine.
+
+## Where purpose-built tools still fit
+
+Realmroot does not claim that every interaction should use OpenAPI. A
+purpose-built MCP server or curated tool remains appropriate for a specialized
+protocol, a highly opinionated workflow, or an experience that intentionally
+hides the underlying API model.
+
+The Agent Tool Plane targets the broad case where a stable HTTP API already
+exists and duplicating it would add more maintenance than value.
+
+## Product test
+
+The tool plane is working when registering a resource expands what Agents can
+do without requiring Agent-specific backend code, while every protected request
+still carries enough identity and authority for the original resource server to
+make its own correct decision.
+
+See [How Realmroot works](/docs/getting-started/how-it-works/) for the request
+sequence and [Make an API Agent-ready](/docs/guides/make-an-api-agent-ready/)
+for the integration contract.

@@ -1,20 +1,58 @@
 ---
-title: Agent authority
+title: Agent identity and authority
 description: Durable identities, host bindings, controller decisions, and direct resource access.
 ---
 
-Realmroot separates a durable agent identity from the host registration and key
-that currently presents it.
+Realmroot separates a durable Agent identity from the Host registration and key
+that currently presents it. It also separates identity from authority: knowing
+which Agent is acting does not imply that the Agent may call a business API.
+
+## The public model
+
+| Resource | Meaning |
+| --- | --- |
+| **Agent** | A durable non-human identity with an immutable issuer and subject |
+| **Host binding** | A controller-approved association between the stable Agent and one current runtime registration |
+| **Home space** | The person or organization that owns and governs the Agent |
+| **Access request** | One Agent, one API Resource, an optional external account, an exact scope set, a reason, and a pending decision |
+| **Access grant** | Approved one-time, limited, or persistent authority derived from a request |
+| **Audit event** | A non-secret record of enrollment, approval, issuance, denial, or revocation |
+
+Host credentials, proof keys, OAuth connection intents, refresh credentials,
+token leases, and DPoP private keys are internal security records. They are not
+Agent identity and must not be copied into chat, logs, or product configuration.
 
 ## Identity before authority
 
-Enrollment associates a host with a stable identity after controller approval.
-It does not grant API authority.
+The first protected operation starts a hosted, device-style enrollment flow.
+The adapter registers the current Host, a controller approves the relationship,
+and Realmroot creates or reuses the stable Agent in a personal or organization
+home space.
+
+The browser session approves the relationship; it never becomes the Agent's
+request principal. Enrollment grants only identity and default self-service
+authority. It does not grant Realmroot administration or business API access.
 
 Authority begins when an agent requests one API resource and an exact scope
 set. External resources also bind the request to one connected account.
 Expanding scopes, changing the account, or selecting another resource requires
 a new controller decision.
+
+The requested scopes come from the selected API's current OpenAPI security
+requirements. Realmroot does not invent them or maintain a parallel scope
+catalog.
+
+## Three boundaries that must remain separate
+
+1. **Enrollment** answers which stable Agent this Host may present.
+2. **Realmroot management capabilities** answer which Realmroot resources the
+   Agent may administer.
+3. **API Resource grants** answer which scopes the Agent may request for one
+   protected business API.
+
+Approval at one boundary never implies approval at another. An Agent that may
+read its own Realmroot record does not automatically receive a product API
+token, and no Agent impersonates its controller.
 
 ## Direct access
 
@@ -26,9 +64,48 @@ For Realmroot-native resources, Realmroot signs the token. For external
 resources, Realmroot performs standards-based OAuth exchange with the target
 authorization server.
 
+| | Native API Resource | External API Resource |
+| --- | --- | --- |
+| Token issuer | Realmroot | Target platform |
+| User authority | Realmroot user or organization | Connected target account |
+| Subject | Controller or organization home space | Connected target user |
+| Actor | Stable Agent in the RFC 8693 `act` claim | Stable Agent in the target-issued `act` claim |
+| User refresh credential exposed to Agent | Never | Never |
+
+For each resource grant, the adapter creates a separate DPoP key. The protected
+API validates the issuer, audience, expiry, exact scopes, key binding, request
+method and URL, access-token hash, and replay state. Claims such as `sub`,
+`act`, `roles`, and `groups` may provide policy or audit context, but they never
+expand `scope`.
+
+## Roles constrain; grants authorize
+
+A Realmroot role is a named set of scope references published by one API
+Resource. It can provide reusable policy context or act as an eligibility
+ceiling for an Agent.
+
+A role assignment alone cannot issue a token. The controller-approved grant
+still determines the exact scope set. A resource server may always apply
+stricter local rules.
+
 ## Revocation
 
 Revoking a grant, connection, credential, agent, or host prevents new token
 issuance. Audit records identify the principal, controller, agent, host,
 resource, scopes, and outcome without storing raw credentials or access tokens.
 
+Revoking one Host does not have to destroy the stable Agent or its other Hosts.
+Recovery preserves the Agent subject while revoking current bindings, sessions,
+and authority; replacement Hosts and grants require new controller decisions.
+Retirement permanently reserves the subject so historical audit remains
+meaningful.
+
+Public AgentInfo may resolve a verified Agent actor to a name and picture. It is
+display metadata only and must never participate in authentication,
+authorization, or revocation.
+
+## Continue reading
+
+- [How Realmroot works](/docs/getting-started/how-it-works/)
+- [Authorization boundary](/docs/concepts/authorization-boundary/)
+- [Agent access guide in the Realmroot repository](https://github.com/realmroot/realmroot/blob/main/docs/guides/agent-access.md)

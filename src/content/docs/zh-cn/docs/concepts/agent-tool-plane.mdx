@@ -1,0 +1,96 @@
+---
+title: Agent Tool Plane
+description: 实时 OpenAPI 契约、Realmroot 发现、Restish 与 Realmroot Skill 如何把现有 API 转化为可组合的 Agent 能力。
+---
+
+Agent Tool Plane 是一条共享路径，让现有 API 成为 Agent 可以发现并安全使用的能力。
+
+```text
+API + OpenAPI + 本地权限执行
+              ↓
+Realmroot 注册、发现、身份与委托授权
+              ↓
+Restish 通用 CLI + Realmroot Skill
+              ↓
+Agent 发现并直接调用
+```
+
+它是建立在 Realmroot 身份与信任基础之上的结果层。目标不只是认证 Agent，而是让 Agent
+在原始服务上完成一次真实操作。
+
+## 为什么第二套集成面的成本很高
+
+一套 API 已经拥有操作语义、请求与响应 Schema、版本历史、安全要求、文档与生产环境
+权限执行。如果每个服务都为 Agent 再开发 API、MCP Server 或自定义 CLI，就可能复制
+现有契约的一部分。
+
+初次开发只是容易看到的成本。更大的成本在于长期跟随 API 演进、重复实施安全修复、
+支持不同 Agent Runtime，以及不断解释哪一个接口才是权威来源。
+
+Realmroot 选择复用已经存在的契约。
+
+## 实时发现，而不是复制目录
+
+资源团队注册一个稳定的受保护 Resource URL，并通过标准 `service-desc` Link 暴露
+OpenAPI 文档。
+
+Agent 在任务发生时发现已注册资源并检查实时契约。Realmroot 从标准 OpenAPI Security
+Requirement 派生可申请 Scope。只写在 Realmroot 配置或说明文本里的 Scope 不可申请。
+
+因此，资源服务器代码和契约变化始终是权威来源。过期或不可访问的契约会在申请、审批与
+签发边界 Fail Closed。
+
+## 通用调用，而不是每个 API 一个 Adapter
+
+Restish 将标准 OpenAPI 操作转化为一致的 CLI。Realmroot Skill 则提供 Agent 操作方法：
+
+1. 将用户目标转化为所需能力；
+2. 发现并检查候选资源；
+3. 选择操作与最小 Scope；
+4. 复用完全匹配的 Grant，或申请控制者批准；
+5. 获得受保护凭证；
+6. 执行目标操作并返回结果。
+
+Skill 教会 Agent 过程，实时 API 契约提供命令、参数与 Scope 要求。
+
+## 资源越多，能力网络越强
+
+Agent Runtime 不需要把所有工具编译进客户端或 Prompt。每注册一个兼容资源，能力网络
+就自然扩展。同一套操作方法可以用于存储、客服、数据、支付、基础设施及其他私有 API。
+
+这改变了扩展单位：
+
+- API 团队只接入一次资源；
+- Agent Runtime 只学习一套发现与权限流程；
+- 每个新资源都能被所有获得授权的 Agent 使用，无需新增 Agent 专用后端代码。
+
+## 发现范围可以广，执行权限必须窄
+
+Agent 可以检查能力目录，而无需持有业务 Scope。只有选中具体操作后，它才申请权限。
+Grant 绑定一个资源、可选账户、精确 Scope、用途与生命周期。
+
+这样既能广泛发现，又能保持最小权限执行。
+
+## 直接调用保留原始服务边界
+
+批准后，Agent 携带短期、DPoP 绑定凭证调用原始资源服务器。业务 Payload 不经过 Realmroot。
+
+资源服务器继续拥有对象级权限、租户、数据、业务规则与最终决定。这避免工具平面变成
+中心代理或第二个业务权限引擎。
+
+## 专用工具仍然有自己的位置
+
+Realmroot 不主张所有交互都使用 OpenAPI。对于特殊协议、高度定制的工作流，或刻意隐藏
+底层 API 模型的体验，专用 MCP Server 或策划过的工具仍然合适。
+
+Agent Tool Plane 面向的是更普遍的场景：稳定 HTTP API 已经存在，复制它带来的维护成本
+高于价值。
+
+## 产品检验标准
+
+当注册一个资源就能扩展 Agent 可完成的任务，而不要求新增 Agent 专用后端代码，同时每个
+受保护请求仍携带足够的身份与权限，让原始资源服务器自行作出正确决定，Agent Tool Plane
+就真正发挥了作用。
+
+阅读 [Realmroot 如何工作](/zh-cn/docs/getting-started/how-it-works/)了解请求顺序，或按照
+[让 API 可被 Agent 使用](/zh-cn/docs/guides/make-an-api-agent-ready/)完成接入。

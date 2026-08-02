@@ -1,35 +1,98 @@
 ---
 title: 快速开始
-description: 部署 Realmroot，创建首位管理员，并连接一个产品应用。
+description: 安装 Realmroot Skill，让 Agent 发现并调用一个已注册的私有 API。
 ---
 
-## 1. Fork 仓库
+这条路径从产品结果开始：Agent 在不接收你的个人 API Key 的情况下，完成一次私有 API
+任务。
 
-Fork [`realmroot/realmroot`](https://github.com/realmroot/realmroot)。
-每个生产 Realm 都应该拥有自己的 Fork 与 Cloudflare 资源集。
+你需要一个受支持的 Agent Runtime，并能够访问至少注册了一个 API Resource 的
+Realmroot 部署。如果没有指定部署，Realmroot Skill 会使用托管生产 Realm
+`https://id.realmroot.dev`。
 
-## 2. 安装部署工作流
+## 1. 安装 Realmroot Skill
 
-将仓库中的 `deploy/realmroot-fork.yml` 复制到 Fork 的
-`.github/workflows/deploy.yml`。按照部署文档配置 Cloudflare Secret
-与邮件发件人，然后运行 **Deploy Realmroot Fork**。
+为 Agent Runtime 全局安装 Skill：
 
-## 3. 初始化 Realm
-
-打开部署 URL 并完成首位管理员 Onboarding。之后，已登录管理员会进入 Console。
-
-## 4. 注册应用
-
-在 Console 中创建 Application 并添加 Redirect URI。产品应用通过以下地址发现 Realm：
-
-```text
-https://your-realm.example.com/api/auth/.well-known/openid-configuration
+```bash
+npx skills add realmroot/realmroot -g --skill realmroot
 ```
 
-浏览器与原生客户端应使用带 PKCE 的 Authorization Code。
-服务端 Confidential Client 则使用注册的 Client Credential 访问 Token Endpoint。
+Codex 的非交互安装命令：
 
-## 5. 配置产品体验
+```bash
+npx skills add realmroot/realmroot -g --skill realmroot --agent codex -y
+```
 
-选择登录方式、配置 Connector、设置安全策略并定制托管页面品牌。
-用户可以在托管账户中心管理自己的身份。
+检查安装来源与 Scope：
+
+```bash
+npx skills list -g
+```
+
+Skill 包含当前版本的 Restish 准备、身份建立、资源发现、权限申请与目标调用流程。
+
+## 2. 直接给 Agent 一个真实任务
+
+描述你想得到的结果，而不是认证步骤：
+
+```text
+使用 Realmroot 发现并调用列出我的活跃项目所需的私有 API 能力。
+```
+
+Agent 会：
+
+1. 确定 Realmroot 部署并建立稳定身份；
+2. 检查已注册资源目录；
+3. 读取候选 API 的实时 OpenAPI 契约；
+4. 选择准确操作与最小 Scope 集合；
+5. 在没有完全匹配的有效 Grant 时申请访问；
+6. 获批后继续执行原始操作。
+
+发现与审批只是中间步骤。只有目标 API 操作成功，用户任务才算完成。
+
+## 3. 分别批准身份与权限边界
+
+首次执行受保护操作时，Realmroot 会打开托管 Enrollment 页面。控制者登录后，批准当前
+Host 与稳定 Agent 身份之间的绑定。
+
+Enrollment **不会**授予业务 API 权限。当 Agent 需要受保护资源时，Realmroot 会展示
+另一项独立决策，其中包含：
+
+- 稳定 Agent；
+- API Resource，以及适用时的外部账户；
+- 精确 Scope 集合与用途；
+- 申请的 Grant 生命周期。
+
+控制者的浏览器会话只作出决策，永远不会成为 Agent 的 CLI Principal。
+
+## 4. 让原始操作完成
+
+批准后，Restish Adapter 获得短期、DPoP 绑定的凭证，并直接调用选中的资源 URL。
+原始 Access Token、Refresh Credential、Host Key 与 DPoP Private Key 都不会进入聊天或
+普通命令输出。
+
+API 验证 Token 与请求证明，要求当前操作的 Scope，并执行自身业务规则。Realmroot
+不在业务请求路径上。
+
+## 运行自己的 Realm
+
+Realmroot 是部署在 Cloudflare 上的开源服务。每个部署代表一个身份与策略 Realm。
+
+1. Fork [`realmroot/realmroot`](https://github.com/realmroot/realmroot)。
+2. 将 `deploy/realmroot-fork.yml` 安装为 Fork 中的 `.github/workflows/deploy.yml`。
+3. 按照[部署指南](https://github.com/realmroot/realmroot/blob/main/docs/deploy/cloudflare.md)
+   配置 Cloudflare Secret 与邮件发件人。
+4. 运行 **Deploy Realmroot Fork**，打开部署 URL，并完成首位管理员 Onboarding。
+
+随后，产品应用可以注册为 OIDC Client；API 团队可以注册受保护资源 URL 与实时
+OpenAPI 契约，[让 API 可被 Agent 使用](/zh-cn/docs/guides/make-an-api-agent-ready/)。
+
+## 下一步
+
+- 阅读 [Realmroot 如何工作](/zh-cn/docs/getting-started/how-it-works/)，了解完整控制路径与
+  数据路径。
+- 在设计 Grant 或撤销策略前阅读 [Agent 身份与权限](/zh-cn/docs/concepts/agent-authority/)。
+- 当准确命令与本概览不同时，以
+  [Realmroot Skill 指令](https://github.com/realmroot/realmroot/tree/main/skills/realmroot)
+  为准。

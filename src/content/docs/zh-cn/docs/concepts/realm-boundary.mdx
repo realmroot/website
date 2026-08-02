@@ -9,22 +9,51 @@ Realmroot v1 将一个部署定义为一个 Auth Realm。
 
 - 一个 Better Auth 用户池
 - 一个 Issuer
+- 一个稳定 Agent Namespace
 - 一个管理员界面
 - 一套登录、MFA、Connector、邮件与安全策略
 - 每个环境独立的数据库、对象存储、队列与 Secret
+
+部署边界让身份、策略、运维与事件响应都指向同一个具体系统，而不是数据库中的一个
+Tenant 标志。
 
 ## Application 共享身份
 
 Application 是 Realm 内的 OIDC Client。当多个应用有意共享账户、管理员与安全策略时，
 可以将它们注册到同一个 Realm。Application 不是用户隔离边界。
 
-## Organization 表达授权
+产品应用通过 OIDC 完成登录与 Session。Realmroot Resource API 是管理与自动化接口，
+应用不应该把它当作普通登录 API。
+
+## Organization 与 Home Space 表达控制上下文
 
 Organization 描述 Realm 内的成员关系与授权，但不会创建独立的 Issuer、
 身份提供商配置或用户池。
+
+稳定 Agent 归属于一个个人或 Organization Home Space。Home Space 决定谁能够治理 Agent，
+以及哪个外部关联账户可以参与 Grant，但不会让 Agent 自动获得这个人或 Organization
+所有资源的权限。
+
+## API Resource 可以跨越 Realm 边界
+
+API Resource 是注册到 Realm 的受保护业务 API，可以使用两种 Issuer 边界：
+
+- **Native：** API 信任 Realmroot 作为 Authorization Server。
+- **External：** 目标平台保留自己的用户、OAuth Server、Token 与 Consent，Realmroot
+  只协调经过控制者批准的 Agent Grant。
+
+两种模式下，Agent 都直接调用资源 URL，资源服务器作出最终决定。
 
 ## 独立产品使用独立 Realm
 
 如果产品需要独立的用户、管理员、Issuer、登录策略、事件响应、备份或删除生命周期，
 请部署新的 Realmroot 实例。
 
+每个 Realm 应使用独立的生产与 Staging Cloudflare 资源集，使 Worker、数据库、存储、
+域名、Issuer Key 与 Secret 都和身份边界保持一致。
+
+## 相关概念
+
+- [产品身份与信任基础](/zh-cn/docs/guides/product-identity-root/)
+- [Agent 身份与权限](/zh-cn/docs/concepts/agent-authority/)
+- [授权边界](/zh-cn/docs/concepts/authorization-boundary/)

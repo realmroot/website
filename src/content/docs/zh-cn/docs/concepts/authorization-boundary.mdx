@@ -1,0 +1,112 @@
+---
+title: 授权边界
+description: 为什么 API 代码与 OpenAPI 定义权限，而 Realmroot 管理身份、审批、签发与审计。
+---
+
+Realmroot 是 Identity Provider 与 Authorization Server，但不是所有 API 的业务权限引擎。
+
+资源服务器拥有权限语义与最终执行。Realmroot 发现这套词汇、记录已批准权限，并签发可信
+Claim 来表达它。
+
+```text
+资源服务器代码 + OpenAPI
+        │ 定义 Scope 与操作要求
+        ▼
+Realmroot 身份、Role、申请、审批与 Grant
+        │ 签发精确 Scope 与策略上下文
+        ▼
+短期 DPoP 绑定 Access Token
+        │ 与请求和本地数据一起验证
+        ▼
+资源服务器作出最终 Allow / Deny 决定
+```
+
+## 四项独立职责
+
+### 1. 权限定义属于资源服务器
+
+API 定义：
+
+- 存在哪些业务操作；
+- 哪些 Scope 表达这些操作；
+- 每个 OpenAPI Operation 需要哪些 Scope；
+- 对象、租户、所有权、状态与属性规则；
+- 请求被允许或拒绝时的行为。
+
+Realmroot 没有一等业务 `Permission` 资源。只有实时 OpenAPI 契约通过标准 OAuth 或 OIDC
+Security Requirement 声明的 Scope 才可申请。
+
+### 2. 授权事实与审批属于 Realmroot
+
+Realmroot 管理 Principal 与委托相关事实：
+
+- 用户、应用、Organization Member 与稳定 Agent 身份；
+- Agent Controller 与 Home Space；
+- 分配给 Principal 的 Role；
+- 精确 Agent Access Request 与控制者批准的 Grant；
+- External Resource 的已连接目标账户；
+- Grant 生命周期、撤销与审计历史。
+
+这些事实回答 Realmroot 是否可以签发或协调获得某个 Scope，但不会回答某个具体业务对象
+是否可访问。
+
+### 3. Token 签发表达已批准边界
+
+对于 Native Resource，Realmroot 根据当前契约验证 Audience 与 Scope，应用 Grant 边界，
+并签发短期 Token。
+
+对于 External Resource，Realmroot 向目标 Authorization Server 提交已连接用户的 Subject
+权限与稳定 Agent Actor。目标平台取二者交集并签发最终 Token。
+
+签发是一项授权决定，但不是最终请求决定。
+
+### 4. 请求执行属于资源服务器
+
+资源服务器验证 Token 与 DPoP Proof，要求当前操作的 Scope，解释身份与策略上下文，并结合
+本地数据执行规则。任何输入不足都应默认拒绝。
+
+Realmroot Claim 是这项决定的输入，不是远程 Allow / Deny 调用。
+
+## Scope、Role 与本地策略不是同一个概念
+
+| 机制 | 所有者 | 用途 |
+| --- | --- | --- |
+| **Scope** | 资源 API 与 OpenAPI | 已批准操作类别的协议标签 |
+| **Role** | Realmroot | 资源自有 Scope 引用的具名集合与可选资格上限 |
+| **Grant** | Realmroot 控制者决策 | 获批 Agent、资源、账户、Scope、用途与生命周期 |
+| **本地策略** | 资源服务器 | 一次请求的对象级、租户、所有权、状态与业务决定 |
+
+Role 本身不能为 Token 增加 Scope，Grant 不能强迫 API 提供数据，有效 Scope 也不标识一个
+具体业务对象。
+
+例如，`documents:read` 可以授权一类读取操作，但 Documents API 仍可检查 Subject 是否属于
+文档所在 Organization，以及文档当前状态是否允许 Agent 访问。
+
+## 为什么 OpenAPI 必须保持权威
+
+把 Scope 与 Operation 映射留在 API 代码旁边，可以避免两套权限定义逐渐漂移。从 OpenAPI
+移除一个 Scope 后，新的 Agent Role Scope 更新、申请、审批与签发都会停止。
+
+Realmroot 可以拒绝过期引用，但无法修复过期 API 契约，因此资源服务器代码与 OpenAPI
+必须一起演进。
+
+## Native 与 External 保持同一所有权模型
+
+| 职责 | Native | External |
+| --- | --- | --- |
+| Scope 名称与 Operation 映射 | Resource OpenAPI | Resource OpenAPI |
+| Agent Request 与控制者 Grant | Realmroot | Realmroot |
+| 最终 Token Issuer | Realmroot | 目标 Authorization Server |
+| 对象与请求执行 | 资源服务器 | 资源服务器 |
+
+只有 Issuer 边界不同。两种模式下 Realmroot 都不会成为业务请求代理。
+
+## 安全结果
+
+一个 Token 可以真实、未过期、Audience 正确且正确绑定 DPoP，但仍因本地策略不满足而被
+拒绝。这是预期行为。原始服务保留最终决定，因为只有它掌握正确判断所需的代码、数据与
+上下文。
+
+阅读 [Agent 身份与权限](/zh-cn/docs/concepts/agent-authority/)了解身份与 Grant 生命周期，
+或查看完整[授权设计](https://github.com/realmroot/realmroot/blob/main/docs/architecture/authorization-boundaries.md)
+了解实现语义。

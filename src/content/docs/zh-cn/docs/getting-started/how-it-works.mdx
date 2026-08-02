@@ -1,0 +1,140 @@
+---
+title: Realmroot 如何工作
+description: 从 API 注册、实时发现到控制者批准与 Agent 直连调用的完整路径。
+---
+
+Realmroot 连接三个参与方，但不会把业务 API 搬入一个新平台：
+
+| 参与方 | 职责 |
+| --- | --- |
+| **Agent** | 发现能力、选择操作、申请最小权限并调用 API |
+| **Realmroot** | 注册资源、建立稳定 Agent 身份、记录控制者决策，并签发或协调获得受限凭证 |
+| **资源服务器** | 发布 API 契约、定义 Scope 语义、验证请求并作出最终业务决定 |
+
+设计的关键是分开**控制路径**与**业务数据路径**。
+
+```text
+控制路径
+Agent <── 发现 / 身份 / 申请 / 审批 / 签发 ──> Realmroot
+
+业务数据路径
+Agent ───── 短期 DPoP 请求 ─────> 资源 API
+                                  └─ 最终 Allow / Deny
+```
+
+Realmroot 看到授权生命周期，但不会代理受保护操作，也不会成为业务数据的 System of Record。
+
+## 任务开始前：让能力可以被发现
+
+API 团队完成一次性集成：
+
+1. 保持一个稳定的受保护 `resourceUrl`。
+2. 从该 URL 返回 RFC 8631 `service-desc` Link。
+3. 发布 OpenAPI 3.x 文档，并通过标准 OAuth 或 OIDC Security Requirement 为受保护操作
+   声明 Scope。
+4. 在 Realmroot 中将 API Resource 注册为 `native` 或 `external`。
+5. 在 API 内验证 Access Token、操作 Scope、DPoP 绑定与本地业务策略。
+
+Realmroot 读取实时契约，不会把操作与 Scope 定义复制进第二个工具目录。契约暂时不可用时，
+资源仍可显示为不可用，但新访问申请与 Token 签发会 Fail Closed。
+
+## 任务执行时：发现、授权、调用
+
+### 1. 发现能力
+
+Agent 列出对其可见的 API Resource，并根据标识、名称、说明与 Scope 搜索完成用户目标所需
+的能力。
+
+发现不会授予业务权限，只说明哪些能力可以被申请。
+
+### 2. 检查实时操作
+
+Agent 直接连接候选 Resource URL 并读取 OpenAPI 契约，从中选择准确操作、参数与最小
+Scope 集合。资源契约而不是 Realmroot 才是这些信息的权威来源。
+
+### 3. 建立稳定 Agent
+
+如果当前 Runtime 尚未在所选 Realm 中 Enrollment，Adapter 会启动托管批准流程。
+控制者将当前 Host Registration 绑定到稳定 `(issuer, subject)` Agent 身份。
+
+Enrollment 证明哪个 Agent 正在行动，但不授予所选业务 API 的权限。
+
+### 4. 申请精确权限
+
+不存在完全匹配的有效 Grant 时，Agent 创建 Access Request，其中包含：
+
+- 一个稳定 Agent；
+- 一个 API Resource；
+- 适用时，一个已连接的目标账户；
+- 操作所需的精确 Scope；
+- 人类可理解的用途说明。
+
+更换资源、账户或 Scope 集合都需要新的决策。
+
+### 5. 由控制者决定
+
+Realmroot 在浏览器中展示请求。控制者可以批准或拒绝，并选择一次性、限时或长期 Grant。
+
+控制者 Session 只批准委托，Agent 不会借用控制者的浏览器 Session 或个人 API Credential。
+
+### 6. 签发受限凭证
+
+Restish Adapter 为 Resource Grant 创建独立 P-256 DPoP Key。随后，Realmroot 签发或协调
+获得短期、Audience 受限且只包含已批准 Scope 的 Token。
+
+原始 Token 与 Private Key 留在 Adapter 内，不会出现在普通命令输出中。
+
+### 7. 调用原始 API
+
+Agent 恢复原操作，直接请求已注册 Resource URL。Adapter 加入 DPoP Authorization Token
+与新的请求证明；证明会绑定 HTTP Method、目标 URL、Access Token 与请求密钥。
+
+Realmroot 不在这条请求路径中。
+
+### 8. 在资源服务器本地执行
+
+资源服务器验证 Issuer、签名、Token Type、Audience、有效期、操作 Scope、密钥绑定、
+请求证明与重放状态，然后执行本地所有权、租户、对象状态与业务规则。
+
+密码学上有效的 Token 是必要条件，但不是充分条件。资源服务器仍可拒绝请求。
+
+## Native 与 External Resource
+
+两种模式共享发现、申请、审批、Grant、DPoP、撤销与审计模型，只在 Token Issuer
+边界上不同。
+
+| | Native | External |
+| --- | --- | --- |
+| Authorization Server | Realmroot | 目标平台 |
+| Account Connection | 不需要 | 每个资源与 Home Space 对应一个目标账户 |
+| 最终 Token | Realmroot 签发的 `at+jwt` | 目标平台签发的 DPoP Token |
+| Subject | 控制用户或 Organization | 已连接的目标用户 |
+| Actor | 稳定 Agent | 稳定 Agent |
+| 业务请求路径 | Agent → 资源服务器 | Agent → 资源服务器 |
+
+产品 API 能够信任 Realmroot Issuer 与 JWKS 时使用 `native`；目标平台必须保留自己的用户、
+OAuth Server、Token 与 Consent 时使用 `external`。Realmroot 保护已连接用户的 Refresh
+Credential，并通过标准 OAuth Flow 获得受约束的目标 Token，绝不将 Refresh Credential
+返回给 Agent。
+
+## 撤销与恢复
+
+撤销 Agent、Host、Grant、Account Connection 或 Credential 会阻止后续签发。Realmroot
+还会将有效 External Token Lease 发送给目标 Revocation Endpoint。短期凭证限制残余风险。
+
+一个受损 Host 可以被移除，而无需更改稳定 Agent Subject。Recovery 保留 Agent 身份，
+但要求重新批准 Host Binding 与权限。
+
+## 底层开放标准
+
+Realmroot 组合现有标准，不会创建专有 Agent Tunnel：
+
+- OpenAPI 3.x 描述操作与 Scope Requirement
+- OpenID Connect 与 OAuth 2.0 描述 Issuer 与应用集成
+- RFC 8631 用于契约发现
+- RFC 8693 表达委托 Actor 语义与 Token Exchange
+- RFC 9449 DPoP 绑定 Access Token 与请求方密钥
+- RFC 8414、RFC 9728、RFC 7523 与 RFC 7009 支持外部授权
+
+接下来可以阅读 [Agent Tool Plane](/zh-cn/docs/concepts/agent-tool-plane/)，或按照
+[API 接入指南](/zh-cn/docs/guides/make-an-api-agent-ready/)开始集成。

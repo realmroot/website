@@ -1,0 +1,92 @@
+---
+title: 产品身份与信任基础
+description: 将 Realmroot 作为用户、应用、Organization、API 与 Agent 共用的可部署身份根。
+---
+
+Agent Tool Plane 是 Realmroot 的产品结果。它下面是一套完整的身份与信任基础，对产品团队
+也能独立创造价值。
+
+这一层回答：谁属于产品、哪些应用有意共享用户、它们信任哪个 Issuer、谁控制安全策略，
+以及权限如何被委托给 Agent。
+
+## 一个 Realm 包含什么
+
+一个 Realmroot 部署提供：
+
+- 一个 Better Auth 用户池与 OIDC Issuer；
+- 托管登录、注册、恢复、Consent、MFA、Passkey 与 Session；
+- Public、Native 与 Confidential Application Client；
+- 用于管理资料、Credential、Session、关联账户、授权应用与个人 Agent 的 Account Center；
+- 用于管理应用、用户、Organization、Role、Connector、API Resource、安全、品牌、
+  Webhook、Agent 与审计的 Admin Console；
+- 一个通过 OpenAPI 描述、用于管理与自动化的 Resource API。
+
+它们不是拼接在一起的独立产品。同一套用户、Organization、Application、Session 与策略
+会成为 Agent 能力的控制上下文。
+
+## 一个部署就是一个 Realm
+
+一个部署拥有一个用户池、Issuer、Agent Namespace、策略边界、管理员界面与环境资源集。
+
+当多个 OIDC Application 有意共享账户、管理员与策略时，将它们注册在同一 Realm。如果
+产品需要独立用户、Issuer、管理员、Provider 配置、事件响应、备份或删除生命周期，则
+部署新的 Realmroot 实例。
+
+Organization 是 Realm 内的成员关系与授权对象，不会创建独立用户池或 Issuer。
+
+## 连接产品应用
+
+在 Admin Console 中创建 Application 并注册 Redirect URI。应用通过以下地址发现 Issuer：
+
+```text
+https://your-realm.example.com/api/auth/.well-known/openid-configuration
+```
+
+浏览器与 Native Client 使用带 PKCE 的 Authorization Code。服务端 Confidential Client
+使用注册的 Client Credential。
+
+产品应用通过 OIDC 完成普通登录与 Session，不应该把 Resource API 当成替代登录机制。
+
+## 运行产品身份边界
+
+运营者从 Console 配置登录方式、社交或企业 Connector、MFA 与密码策略、邮件行为、托管
+品牌与 Application Client。用户通过 Account Center 管理自己的 Credential 与 Session。
+
+管理 Resource API 位于：
+
+```text
+https://your-realm.example.com/api/openapi.json
+```
+
+它服务于管理与自动化。Realmroot 自身的 Management Capability 与已注册业务 API 的
+Grant 是彼此独立的权限边界。
+
+## 增加 Agent，但不创建身份孤岛
+
+Agent 与用户共享 Realm Issuer，但拥有自己的稳定 Subject。它的身份与当前承载它的 Host
+Key 分开，它的权限也与 Enrollment 分开。
+
+个人或 Organization Home Space 控制 Agent。现有产品上下文支撑明确 Enrollment、API
+Access Approval、撤销、恢复与审计。Agent 不需要借用用户 Session，也不会获得个人
+Refresh Credential。
+
+## 增加 API，但不搬走业务策略
+
+当受保护 API 信任 Realmroot Issuer 时，将其注册为 Native Resource；当另一个平台保留
+Authorization Server 时，注册为 External Resource。两种模式都满足：
+
+- OpenAPI 继续作为 Operation 与 Scope 契约；
+- 控制者批准精确 Grant；
+- Agent 获得短期、DPoP 绑定凭证；
+- Agent 直接调用原始 API；
+- API 作出最终业务决定。
+
+因此，身份是基础而不是终点。Realmroot 使用 Realm 的信任上下文，让现有产品能力可以被
+Agent 安全使用。
+
+## 下一步
+
+- [Realm 边界](/zh-cn/docs/concepts/realm-boundary/)
+- [Agent 身份与权限](/zh-cn/docs/concepts/agent-authority/)
+- [让 API 可被 Agent 使用](/zh-cn/docs/guides/make-an-api-agent-ready/)
+- [Cloudflare 部署指南](https://github.com/realmroot/realmroot/blob/main/docs/deploy/cloudflare.md)

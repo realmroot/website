@@ -9,9 +9,13 @@ One deployment owns:
 
 - one Better Auth user pool
 - one issuer
+- one stable Agent namespace
 - one administrator surface
 - one set of login, MFA, connector, email, and security policies
 - one database, asset bucket, queue, and secret set per environment
+
+The deployment boundary makes identity, policy, operations, and incident
+response point to the same concrete system. It is not a row-level tenant flag.
 
 ## Applications share identity
 
@@ -19,10 +23,31 @@ Applications are OIDC clients inside a realm. Register multiple applications
 when they intentionally share accounts, administrators, and security policy.
 An application is not a user-isolation boundary.
 
-## Organizations model authorization
+Product applications use OIDC for sign-in and sessions. Realmroot's Resource
+API is the management and automation surface; applications do not call it for
+normal login.
+
+## Organizations and home spaces model control context
 
 Organizations describe membership and authorization inside a realm. They do
 not create independent issuers, provider configuration, or user pools.
+
+A stable Agent belongs to one personal or organization home space. That home
+space determines who can govern the Agent and which connected external account
+can participate in a grant. It does not give the Agent implicit access to every
+resource owned by that person or organization.
+
+## API Resources can cross the realm boundary
+
+An API Resource is a protected business API registered with the realm. It can
+use one of two issuer boundaries:
+
+- **Native:** the API trusts Realmroot as its authorization server.
+- **External:** the target platform keeps its own users, OAuth server, tokens,
+  and consent while Realmroot coordinates a controller-approved Agent grant.
+
+In both cases, the Agent calls the resource URL directly and the resource server
+makes the final decision.
 
 ## Separate products use separate realms
 
@@ -30,3 +55,12 @@ Deploy another Realmroot instance for products that require independent users,
 administrators, issuers, login policy, incident response, backup, or deletion
 lifecycle.
 
+Use separate production and staging Cloudflare resource sets for each realm.
+Separate deployment boundaries keep the Worker, database, storage, domain,
+issuer keys, and secrets aligned with the identity boundary.
+
+## Related concepts
+
+- [Product identity root](/docs/guides/product-identity-root/)
+- [Agent identity and authority](/docs/concepts/agent-authority/)
+- [Authorization boundary](/docs/concepts/authorization-boundary/)

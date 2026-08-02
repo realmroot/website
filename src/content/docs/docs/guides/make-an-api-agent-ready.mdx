@@ -1,0 +1,161 @@
+---
+title: Make an API Agent-ready
+description: Publish a live OpenAPI contract, choose an authorization mode, register the resource, and enforce direct DPoP requests.
+---
+
+You do not need to rebuild an existing API for Agents. Keep the service and
+authorization boundary you already operate, then expose the contract Realmroot
+needs for discovery and delegated access.
+
+## What your API continues to own
+
+- the protected resource URL and API behavior;
+- the OpenAPI contract and operation identifiers;
+- business scope names and their operation mappings;
+- object-level, tenant, ownership, and state rules;
+- token validation and the final allow-or-deny decision.
+
+Realmroot owns resource discovery, stable Agent identity, controller approval,
+grant lifecycle, issuance coordination, revocation, and audit context.
+
+## 1. Publish a stable resource URL
+
+Choose one HTTPS `resourceUrl`. It serves three roles:
+
+1. the resource identifier placed in the token's `aud` claim;
+2. the base URL called by the Agent;
+3. the starting point for contract discovery.
+
+An unauthenticated `GET` to the exact URL must succeed and return an RFC 8631
+`service-desc` link:
+
+```http
+HTTP/1.1 200 OK
+Link: <https://api.example.com/openapi.json>; rel="service-desc"; type="application/openapi+json"
+Content-Type: application/json
+```
+
+The linked document can be OpenAPI 3.x JSON or YAML. Relative link targets are
+also supported.
+
+## 2. Declare operation scopes in OpenAPI
+
+Use a standard OAuth 2.0 or OpenID Connect security scheme. Put required scopes
+in each operation's `security` requirement:
+
+```yaml
+openapi: 3.1.0
+info:
+  title: Projects API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+components:
+  securitySchemes:
+    resourceOidc:
+      type: openIdConnect
+      openIdConnectUrl: https://id.example.com/api/auth/.well-known/openid-configuration
+paths:
+  /projects:
+    get:
+      operationId: listProjects
+      security:
+        - resourceOidc: [projects:read]
+      responses:
+        "200":
+          description: Projects visible to the caller
+```
+
+The API owns `projects:read` and what it means. Realmroot may discover,
+validate, group, approve, and issue that scope, but it never maps the scope to
+business data on the API's behalf.
+
+A scope mentioned only in authorization metadata, prose, or a custom extension
+is not requestable. Keep the contract reachable: Realmroot revalidates it at
+request, approval, and issuance boundaries.
+
+## 3. Choose the issuer boundary
+
+| Choose | When | Additional work |
+| --- | --- | --- |
+| **Native** | The API can trust Realmroot as its authorization server | Validate Realmroot JWTs and DPoP proofs |
+| **External** | The target must retain its users, OAuth server, token lifecycle, and consent | Publish protected-resource and authorization-server metadata; support account connection, token exchange, DPoP, and revocation |
+
+Start with `native` for a product API already sharing the Realmroot identity
+boundary. Use `external` when Realmroot is connecting an Agent to authority held
+on another platform.
+
+## 4. Register the API Resource
+
+A native registration needs a stable identifier, display name, and resource
+URL:
+
+```json
+{
+  "identifier": "projects-api",
+  "name": "Projects API",
+  "resourceUrl": "https://api.example.com",
+  "enabled": true
+}
+```
+
+An external registration also selects the OIDC Connector for the target
+authorization server. The authorization mode is fixed after creation.
+
+The live Realmroot Resource API contract at `/api/openapi.json` is authoritative
+for the current management request schema.
+
+## 5. Validate every protected request
+
+Realmroot never proxies business traffic. Require both headers:
+
+```http
+Authorization: DPoP ACCESS_TOKEN
+DPoP: DPOP_PROOF_JWT
+```
+
+For a native resource, validate:
+
+1. signed JWT, expected algorithm, and `typ: at+jwt`;
+2. exact issuer and registered resource audience;
+3. signature, expiry, issue time, and operation scopes;
+4. `cnf.jkt` binding to the DPoP proof key;
+5. proof type, signature, HTTP method, effective URI, freshness, and unique
+   `jti`;
+6. proof key thumbprint and access-token `ath` hash;
+7. local object-level and business policy.
+
+Reject missing or invalid proofs with a DPoP challenge. Do not silently fall
+back to Bearer authentication.
+
+For an external resource, validate the same DPoP properties with the target
+platform's issuer and JWKS.
+
+## 6. Test the complete path
+
+Before enabling the resource, verify:
+
+- the exact resource URL advertises the OpenAPI contract;
+- protected operations declare standard OAuth or OIDC scopes;
+- Realmroot can fetch the protected Resource URL and its linked OpenAPI
+  document without a user session;
+- token audience validation exactly matches `resourceUrl`;
+- Bearer fallback, invalid proofs, replay, and insufficient scopes are denied;
+- local business rules can still deny a valid token;
+- revocation and short token lifetimes behave as designed.
+
+The repository includes runnable
+[native](https://github.com/realmroot/realmroot/tree/main/examples/native-resource-server)
+and
+[external](https://github.com/realmroot/realmroot/tree/main/examples/external-resource-server)
+resource servers. Use the complete
+[resource-server integration guide](https://github.com/realmroot/realmroot/blob/main/docs/integrations/resource-servers.md)
+for external OAuth metadata, client registration, PKCE, JWT bearer, token
+exchange, and revocation requirements.
+
+## Result
+
+Once registered, every authorized Agent using the Realmroot operating procedure
+can discover the API from its live contract, request the exact authority needed,
+and call it directly. Adding the resource expands the capability network without
+adding an Agent-specific backend to the service.

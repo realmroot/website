@@ -479,7 +479,7 @@ summary:focus-visible {
   position: absolute;
   z-index: -1;
   top: 0;
-  right: min(-12vw, -80px);
+  right: -24px;
   width: min(62vw, 860px);
   height: 100%;
   background: radial-gradient(circle at 65% 38%, rgb(79 209 208 / 16%), transparent 55%);
@@ -2146,6 +2146,10 @@ html[lang='zh-CN'] .article-content {
     gap: 38px;
     padding-top: 56px;
     padding-bottom: 60px;
+  }
+
+  .hero::before {
+    right: -16px;
   }
 
   .hero h1 {

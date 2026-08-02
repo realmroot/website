@@ -10,23 +10,23 @@ interface Props {
 const { locale } = Astro.props;
 const isChinese = locale === 'zh-CN';
 const titleLines = isChinese
-  ? ['让 Agent 行动。', '让授权有边界。']
-  : ['Let agents act.', 'Every grant, explicit.'];
+  ? ['让现有 API，', '成为 Agent 能力。']
+  : ['Make existing APIs', 'Agent capabilities.'];
 const posts = (await getCollection('blog'))
   .filter((post) => post.data.language === locale)
   .sort((a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf());
 ---
 
 <section class="section-shell blog-hero">
-  <p class="eyebrow"><span></span>{isChinese ? 'Agent 身份 · 授权 · 架构' : 'Agent identity · Authority · Architecture'}</p>
+  <p class="eyebrow"><span></span>{isChinese ? 'OpenAPI · Agent 能力 · 信任边界' : 'OpenAPI · Agent capability · Trust boundaries'}</p>
   <h1 class="heading-lines">{titleLines.map((line) => <span>{line}</span>)}</h1>
   <p>
     <PhraseText
       locale={locale}
       text={
         isChinese
-          ? '关于持久 Agent 身份、委托 API 访问与产品信任边界的实践。'
-          : 'Field notes on durable Agent identity, delegated API access, and product trust boundaries.'
+          ? '关于如何发现现有 API、精确委托权限，并让 Agent 直接完成真实任务的产品与工程思考。'
+          : 'Product and engineering notes on discovering existing APIs, delegating precise authority, and letting Agents complete real tasks directly.'
       }
     />
   </p>
@@ -40,7 +40,7 @@ const posts = (await getCollection('blog'))
       return (
         <a class="post-card" href={href}>
           <div class="meta">
-            <span>{post.data.publishedAt.toLocaleDateString(locale)}</span>
+            <span>{post.data.publishedAt.toLocaleDateString(locale, { timeZone: 'UTC' })}</span>
             <span>{isChinese ? '阅读' : 'Read'} ↗</span>
           </div>
           <h3>{post.data.title}</h3>

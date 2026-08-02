@@ -1,0 +1,145 @@
+---
+title: 让 API 可被 Agent 使用
+description: 发布实时 OpenAPI 契约、选择授权模式、注册资源，并执行 Agent 的 DPoP 直连请求。
+---
+
+你不需要为了 Agent 重做已有 API。继续维护现有服务与授权边界，只需公开 Realmroot 完成
+发现与委托访问所需的契约。
+
+## API 继续负责什么
+
+- 受保护 Resource URL 与 API 行为；
+- OpenAPI 契约与 Operation ID；
+- 业务 Scope 名称及其与 Operation 的映射；
+- 对象级、租户、所有权与状态规则；
+- Token 验证与最终 Allow / Deny 决定。
+
+Realmroot 负责资源发现、稳定 Agent 身份、控制者审批、Grant 生命周期、签发协调、撤销与
+审计上下文。
+
+## 1. 发布稳定 Resource URL
+
+选择一个 HTTPS `resourceUrl`，它同时是：
+
+1. Token `aud` Claim 中的资源标识；
+2. Agent 调用的 Base URL；
+3. 契约发现的起点。
+
+对精确 URL 的未认证 `GET` 必须成功，并返回 RFC 8631 `service-desc` Link：
+
+```http
+HTTP/1.1 200 OK
+Link: <https://api.example.com/openapi.json>; rel="service-desc"; type="application/openapi+json"
+Content-Type: application/json
+```
+
+链接文档可以是 OpenAPI 3.x JSON 或 YAML，也支持相对 Link Target。
+
+## 2. 在 OpenAPI 中声明 Operation Scope
+
+使用标准 OAuth 2.0 或 OpenID Connect Security Scheme，并在每个 Operation 的 `security`
+Requirement 中声明所需 Scope：
+
+```yaml
+openapi: 3.1.0
+info:
+  title: Projects API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+components:
+  securitySchemes:
+    resourceOidc:
+      type: openIdConnect
+      openIdConnectUrl: https://id.example.com/api/auth/.well-known/openid-configuration
+paths:
+  /projects:
+    get:
+      operationId: listProjects
+      security:
+        - resourceOidc: [projects:read]
+      responses:
+        "200":
+          description: Projects visible to the caller
+```
+
+API 拥有 `projects:read` 及其语义。Realmroot 可以发现、验证、分组、审批并签发这个 Scope，
+但不会代替 API 将它映射到业务数据。
+
+只写在 Authorization Metadata、说明文字或自定义 Extension 中的 Scope 不可申请。契约
+必须保持可访问，因为 Realmroot 会在申请、审批与签发边界重新验证它。
+
+## 3. 选择 Issuer 边界
+
+| 选择 | 适用情况 | 额外工作 |
+| --- | --- | --- |
+| **Native** | API 可以信任 Realmroot 作为 Authorization Server | 验证 Realmroot JWT 与 DPoP Proof |
+| **External** | 目标平台必须保留自己的用户、OAuth Server、Token 生命周期与 Consent | 发布 Protected Resource 与 Authorization Server Metadata；支持账户连接、Token Exchange、DPoP 与撤销 |
+
+已经与 Realmroot 共享身份边界的产品 API 优先使用 `native`。Realmroot 需要把 Agent 连接到
+另一个平台已有的用户权限时使用 `external`。
+
+## 4. 注册 API Resource
+
+Native Registration 需要稳定 Identifier、展示名称与 Resource URL：
+
+```json
+{
+  "identifier": "projects-api",
+  "name": "Projects API",
+  "resourceUrl": "https://api.example.com",
+  "enabled": true
+}
+```
+
+External Registration 还需选择目标 Authorization Server 的 OIDC Connector。创建后授权
+模式不可变更。
+
+Realmroot `/api/openapi.json` 的实时 Resource API 契约是当前管理请求 Schema 的权威来源。
+
+## 5. 验证每次受保护请求
+
+Realmroot 不会代理业务流量。要求两个 Header：
+
+```http
+Authorization: DPoP ACCESS_TOKEN
+DPoP: DPOP_PROOF_JWT
+```
+
+Native Resource 应验证：
+
+1. 已签名 JWT、预期 Algorithm 与 `typ: at+jwt`；
+2. 精确 Issuer 与已注册 Resource Audience；
+3. 签名、有效期、签发时间与 Operation Scope；
+4. `cnf.jkt` 与 DPoP Proof Key 的绑定；
+5. Proof Type、签名、HTTP Method、有效 URI、新鲜度与唯一 `jti`；
+6. Proof Key Thumbprint 与 Access Token `ath` Hash；
+7. 本地对象级与业务策略。
+
+缺失或无效 Proof 应返回 DPoP Challenge，不能静默降级为 Bearer Authentication。
+
+External Resource 使用目标平台的 Issuer 与 JWKS 验证相同 DPoP 属性。
+
+## 6. 测试完整路径
+
+启用资源前确认：
+
+- 精确 Resource URL 能暴露 OpenAPI 契约；
+- 受保护 Operation 声明标准 OAuth 或 OIDC Scope；
+- Realmroot 无需用户 Session 即可获取受保护 Resource URL 与其链接的 OpenAPI 文档；
+- Token Audience 验证与 `resourceUrl` 完全一致；
+- Bearer 降级、无效 Proof、重放与 Scope 不足都会被拒绝；
+- 即使 Token 有效，本地业务规则仍可拒绝请求；
+- 撤销与短期 Token 生命周期符合设计。
+
+仓库包含可运行的
+[Native](https://github.com/realmroot/realmroot/tree/main/examples/native-resource-server)与
+[External](https://github.com/realmroot/realmroot/tree/main/examples/external-resource-server)
+资源服务器。External OAuth Metadata、Client Registration、PKCE、JWT Bearer、Token
+Exchange 与撤销的完整要求请查看
+[Resource Server Integration Guide](https://github.com/realmroot/realmroot/blob/main/docs/integrations/resource-servers.md)。
+
+## 最终结果
+
+资源注册后，所有遵循 Realmroot 操作方法并获得授权的 Agent 都可以从实时契约发现 API，
+申请精确权限并直接调用。新增资源会扩展整个能力网络，而无需为服务增加 Agent 专用后端。

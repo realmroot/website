@@ -1,17 +1,49 @@
 ---
-title: Agent 权限模型
+title: Agent 身份与权限
 description: 持久身份、主机绑定、控制者决策与直接资源访问。
 ---
 
-Realmroot 将持久 Agent 身份与当前承载它的主机注册和密钥分开。
+Realmroot 将持久 Agent 身份与当前承载它的 Host 注册和密钥分开，同时也将身份与权限
+分开：知道哪个 Agent 正在行动，并不代表它可以调用业务 API。
+
+## 对外产品模型
+
+| 资源 | 含义 |
+| --- | --- |
+| **Agent** | 具有不可变 Issuer 与 Subject 的持久非人类身份 |
+| **Host Binding** | 控制者批准的稳定 Agent 与当前 Runtime 注册关系 |
+| **Home Space** | 拥有并治理 Agent 的个人或 Organization |
+| **Access Request** | 一个 Agent、一个 API Resource、可选外部账户、精确 Scope、用途与待处理决策 |
+| **Access Grant** | 从请求产生的一次性、限时或长期授权 |
+| **Audit Event** | Enrollment、批准、签发、拒绝或撤销的非秘密记录 |
+
+Host Credential、Proof Key、OAuth Connection Intent、Refresh Credential、Token Lease 与
+DPoP Private Key 都是内部安全记录。它们不是 Agent 身份，也不应被复制到聊天、日志或
+产品配置中。
 
 ## 先建立身份，再授予权限
 
-Enrollment 在控制者批准后，将主机与稳定身份关联起来；它本身不授予 API 权限。
+首次执行受保护操作时，Adapter 会启动托管的 Device-style Enrollment。控制者批准关系后，
+Realmroot 在个人或 Organization Home Space 中创建或复用稳定 Agent，并绑定当前 Host。
+
+浏览器会话只批准这项关系，不会成为 Agent 的请求 Principal。Enrollment 只建立身份和
+默认自助权限，不授予 Realmroot 管理权限或业务 API 访问权。
 
 权限从 Agent 针对一个 API Resource 与精确 Scope 集合的请求开始。
 外部资源还会将请求绑定到一个已连接账户。扩大 Scope、切换账户或选择其他资源，
 都需要控制者作出新的决策。
+
+可申请的 Scope 来自所选 API 当前 OpenAPI Security Requirement。Realmroot 不会发明
+Scope，也不会维护平行 Scope 目录。
+
+## 必须分开的三类边界
+
+1. **Enrollment** 决定当前 Host 可以呈现哪个稳定 Agent。
+2. **Realmroot Management Capability** 决定 Agent 可以管理哪些 Realmroot 资源。
+3. **API Resource Grant** 决定 Agent 可以为一个受保护业务 API 申请哪些 Scope。
+
+一个边界的批准不会隐含另一个边界的批准。能够读取自身 Realmroot 记录的 Agent 不会因此
+自动获得产品 API Token，任何 Agent 也不会冒充控制者。
 
 ## 直接访问
 
@@ -21,8 +53,41 @@ Agent 直接把它提交给受保护 API。
 对于 Realmroot 原生资源，Realmroot 签发令牌；对于外部资源，
 Realmroot 与目标 Authorization Server 执行基于标准的 OAuth Exchange。
 
+| | Native API Resource | External API Resource |
+| --- | --- | --- |
+| Token Issuer | Realmroot | 目标平台 |
+| 用户权限 | Realmroot 用户或 Organization | 已连接的目标账户 |
+| Subject | 控制者或 Organization Home Space | 已连接的目标用户 |
+| Actor | RFC 8693 `act` Claim 中的稳定 Agent | 目标 Token `act` Claim 中的稳定 Agent |
+| 向 Agent 暴露用户 Refresh Credential | 永不 | 永不 |
+
+Adapter 会为每个 Resource Grant 创建独立 DPoP Key。受保护 API 验证 Issuer、Audience、
+有效期、精确 Scope、密钥绑定、请求方法与 URL、Access Token Hash 和重放状态。
+`sub`、`act`、`roles`、`groups` 可以提供策略或审计上下文，但永远不会扩大 `scope`。
+
+## Role 约束资格，Grant 才授予权限
+
+Realmroot Role 是一个 API Resource 所发布 Scope 引用的具名集合。它可以提供可复用策略
+上下文，或成为 Agent 可申请 Scope 的资格上限。
+
+Role Assignment 本身不能签发 Token。最终精确 Scope 集仍由控制者批准的 Grant 决定，
+资源服务器始终可以执行更严格的本地规则。
+
 ## 撤销
 
 撤销 Grant、Connection、Credential、Agent 或 Host 会阻止后续令牌签发。
 审计记录会保留 Principal、Controller、Agent、Host、Resource、Scope 与结果，
 但不会存储原始 Credential 或 Access Token。
+
+撤销一个 Host 不必销毁稳定 Agent 或其他 Host。Recovery 保留 Agent Subject，同时撤销
+当前 Binding、Session 与权限；替代 Host 与权限都需要新的控制者决策。Retirement 会
+永久保留 Subject，使历史审计仍然有意义。
+
+公开 AgentInfo 可以将已验证 Agent Actor 解析为名称和头像，但它只用于展示，绝不能
+参与认证、授权或撤销判断。
+
+## 继续阅读
+
+- [Realmroot 如何工作](/zh-cn/docs/getting-started/how-it-works/)
+- [授权边界](/zh-cn/docs/concepts/authorization-boundary/)
+- [主仓库 Agent 访问指南](https://github.com/realmroot/realmroot/blob/main/docs/guides/agent-access.md)

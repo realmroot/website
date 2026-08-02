@@ -1,0 +1,106 @@
+---
+title: Product identity and trust foundation
+description: Use Realmroot as the deployable identity root for people, applications, organizations, APIs, and Agents.
+---
+
+The Agent Tool Plane is Realmroot's product outcome. Underneath it is a complete
+identity and trust foundation that is independently useful to product teams.
+
+This layer answers who belongs to a product, which applications intentionally
+share those users, which issuer they trust, who controls security policy, and
+how authority can be delegated to an Agent.
+
+## What one realm includes
+
+One Realmroot deployment provides:
+
+- one Better Auth user pool and OIDC issuer;
+- hosted sign-in, sign-up, recovery, consent, MFA, passkeys, and sessions;
+- public, native, and confidential application clients;
+- an Account Center for profiles, credentials, sessions, linked accounts,
+  authorized applications, and personal Agents;
+- an Admin Console for applications, users, organizations, roles, Connectors,
+  API Resources, security, branding, webhooks, Agents, and audit;
+- an OpenAPI-described Resource API for administration and automation.
+
+These are not separate products glued together. The same people,
+organizations, applications, sessions, and policies become the control context
+for Agent capabilities.
+
+## One deployment is one realm
+
+A deployment owns one user pool, issuer, Agent namespace, policy boundary,
+administrator surface, and environment resource set.
+
+Register multiple OIDC applications when they intentionally share accounts,
+administrators, and policy. Deploy another Realmroot instance when products
+need independent users, issuers, administrators, provider configuration,
+incident response, backup, or deletion lifecycle.
+
+Organizations are membership and authorization objects inside a realm. They do
+not create independent user pools or issuers.
+
+## Connect a product application
+
+Create an application in the Admin Console and register its redirect URIs.
+Applications discover the issuer at:
+
+```text
+https://your-realm.example.com/api/auth/.well-known/openid-configuration
+```
+
+Browser and native clients use authorization code with PKCE. Server-side
+confidential clients authenticate with their registered client credentials.
+
+Product applications use OIDC for normal sign-in and sessions. They do not call
+the Resource API as a replacement login mechanism.
+
+## Operate the product boundary
+
+Operators configure login methods, social or enterprise Connectors, MFA and
+password policy, email behavior, hosted branding, and application clients from
+the Console. Users manage their own credentials and sessions through Account
+Center.
+
+The management Resource API is served from:
+
+```text
+https://your-realm.example.com/api/openapi.json
+```
+
+It exists for administration and automation. Realmroot's own management
+capabilities are separate from grants for registered business APIs.
+
+## Add Agents without creating an identity silo
+
+An Agent shares the realm's issuer but has its own stable subject. Its identity
+is separate from the Host key currently presenting it, and its authority is
+separate from enrollment.
+
+A person or organization home space controls the Agent. That existing product
+context powers explicit enrollment, API access approval, revocation, recovery,
+and audit. The Agent never needs to borrow a user's session or receive a
+personal refresh credential.
+
+## Add APIs without moving business policy
+
+Register protected APIs as native resources when they trust the Realmroot
+issuer, or external resources when another platform retains the authorization
+server. In both cases:
+
+- OpenAPI remains the operation and scope contract;
+- the controller approves an exact grant;
+- the Agent receives a short-lived DPoP-bound credential;
+- the Agent calls the original API directly;
+- the API makes the final business decision.
+
+This is why identity is the foundation rather than the endpoint. Realmroot uses
+the realm's trust context to make existing product capabilities safely usable
+by Agents.
+
+## Next
+
+- [The realm boundary](/docs/concepts/realm-boundary/)
+- [Agent identity and authority](/docs/concepts/agent-authority/)
+- [Make an API Agent-ready](/docs/guides/make-an-api-agent-ready/)
+- [Cloudflare deployment guide](https://github.com/realmroot/realmroot/blob/main/docs/deploy/cloudflare.md)

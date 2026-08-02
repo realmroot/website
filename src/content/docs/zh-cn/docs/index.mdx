@@ -1,44 +1,82 @@
 ---
 title: Realmroot 是什么？
-description: 把现有 OpenAPI 服务转化为 Agent 可安全发现与调用能力的工具平面。
+description: 把现有 OpenAPI 服务转化为 Agent 可安全发现与调用的能力。
 ---
 
 **让每个 API，都能为 Agent 所用。**
 
-Realmroot 把现有 OpenAPI 服务转化为 Agent 可安全发现与调用的工具。资源团队继续维护
-自己的 API、契约与权限校验，无需再建设和维护一套 Agent 专用集成。
+Realmroot 把现有 OpenAPI 服务转化为 Agent 可安全发现与调用的工具。它为 Agent 提供一条
+可靠路径：找到正确能力、获得当前任务所需的精确委托权限，并调用原始 API。
 
-最终形成一条完整的操作链路：Agent 找到正确的工具，获得完成任务所需的精确委托权限，
-然后直接调用原始服务。
+API 团队继续拥有现有服务、契约、数据与最终授权决定，无需再开发和长期维护一套
+Agent 专用后端。
 
-## 一个产品，两层价值
+<img
+  src="/realmroot-agent-apis.svg"
+  alt="Agent 通过 Realmroot 发现并获得 API 能力授权，随后直接调用多个资源服务器。"
+  width="1400"
+  height="900"
+/>
 
-### Agent Tool Plane
+## Agent 与 API 之间缺少的一层
 
-- 注册现有 API 资源与实时 OpenAPI 契约
-- 在任务发生时发现可用资源与操作
-- 通过 Realmroot Skill 与 Restish 调用任意已注册资源
-- 新资源加入时自然扩展 Agent 能力，无需新增 Agent 专用后端代码
+绝大多数有价值的数字能力已经存在于 HTTP API 之后。Agent 要安全使用它们，仍需回答
+四个问题：
 
-### Identity and Trust Infrastructure
+1. **发现：** 当前有哪些资源与操作可用？
+2. **理解：** 应该如何按照实时契约正确调用？
+3. **信任：** 正在行动的是哪个稳定 Agent，又由谁控制？
+4. **授权：** 资源服务器为什么应该允许这一次具体请求？
 
-身份是地基，不是最终结果。Realmroot 提供稳定 Agent 身份、控制者关系、Grant 审批、
-Token 协调、撤销与审计，让工具调用具备可信基础。
+专用工具可以为一个服务回答这些问题。但如果每个服务都重复建设，就会多出一份需要
+发布、加固、记录并与 API 长期同步的契约。Realmroot 提供的是一条可复用的操作链路。
 
-同一个 Realm 也为用户与应用提供托管认证、OIDC、账户管理与管理 Console。
+## 一个产品，两层不可分割的价值
 
-工具没有信任就不安全；身份没有工具也无法完成任务。Realmroot 把两层价值组合起来：
+| 层 | 提供什么 | 结果 |
+| --- | --- | --- |
+| **Agent Tool Plane** | 资源注册、实时发现、基于 OpenAPI 的通用调用与统一 Agent 操作方法 | 现有 API 成为可组合的 Agent 能力 |
+| **Identity and Trust Infrastructure** | 产品身份、稳定 Agent、控制者关系、Grant、短期凭证、撤销与审计 | 每次能力调用都有明确主体与权限边界 |
+
+身份是地基，不是最终结果。工具没有信任就不安全；身份没有可用工具也无法完成任务。
+Realmroot 把两层价值组合成一条链路：
 
 > **广泛发现。精确授权。直接调用。**
 
-## 职责边界
+## 一次任务中会发生什么
 
-Realmroot 负责注册与发现、Agent 身份、委托 Grant 生命周期与短期 Token 协调。
-它不是 HTTP 代理，也不会复制业务权限。
+1. 资源团队注册受保护 API，并发布实时 OpenAPI 契约。
+2. Agent 通过 Realmroot 发现可用资源。
+3. Agent 读取选中 API 的契约，确定操作与最小 Scope 集合。
+4. Realmroot 将请求绑定到稳定 Agent、控制者、一个资源、可选外部账户、用途与精确
+   Scope 集合。
+5. 控制者批准或拒绝请求，并选择 Grant 生命周期。
+6. Realmroot 签发短期 DPoP 绑定 Token，或与资源现有的 Authorization Server 协调签发。
+7. Agent 直接调用资源服务器；资源服务器验证凭证并执行自己的对象级和业务规则。
 
-资源服务始终是最终授权边界，继续负责 API、OpenAPI 契约、Scope 语义、对象级权限、
-数据与业务规则，以及最终 Allow / Deny 决定。
+阅读 [Realmroot 如何工作](/zh-cn/docs/getting-started/how-it-works/)了解完整请求路径。
 
-从[快速开始](/zh-cn/docs/getting-started/quick-start/)继续，部署 Realm、创建首位管理员，
-并注册第一个产品应用。
+## Realmroot 不会替代 API
 
+Realmroot 不是 HTTP 代理，不是复制出来的业务权限数据库，也不主张所有交互都必须基于
+OpenAPI。特殊协议或高度定制的体验仍然适合使用专用工具。
+
+对于已有 HTTP API，Realmroot 刻意把以下职责留在资源服务器：
+
+- API 行为与 OpenAPI 契约
+- 业务 Scope 定义及其与操作的映射
+- 租户、所有权、对象状态与其他本地策略
+- Token 验证和最终 Allow / Deny 决定
+
+Realmroot 提供可信的身份与委托权限输入。即使 Token 有效，资源服务器仍可拒绝请求。
+
+## 选择你的阅读路径
+
+- **Agent 用户与开发者：** 从[快速开始](/zh-cn/docs/getting-started/quick-start/)安装
+  Skill，并使用一个已注册的私有能力。
+- **API 团队：** 了解 [Agent Tool Plane](/zh-cn/docs/concepts/agent-tool-plane/)，然后
+  [让 API 可被 Agent 使用](/zh-cn/docs/guides/make-an-api-agent-ready/)。
+- **安全团队：** 阅读 [Agent 身份与权限](/zh-cn/docs/concepts/agent-authority/)和
+  [授权边界](/zh-cn/docs/concepts/authorization-boundary/)。
+- **产品团队：** 将 Realmroot 作为人、应用与 Agent 共用的
+  [身份与信任基础](/zh-cn/docs/guides/product-identity-root/)。

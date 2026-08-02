@@ -1,40 +1,109 @@
 ---
 title: Quick start
-description: Deploy Realmroot, bootstrap the first administrator, and connect an application.
+description: Install the Realmroot Skill and let an Agent discover and call a registered private API.
 ---
 
-## 1. Fork the repository
+This path starts with the product outcome: an Agent completes a task against a
+private API without receiving your personal API key.
 
-Fork [`realmroot/realmroot`](https://github.com/realmroot/realmroot). Each production
-realm should have its own fork and Cloudflare resource set.
+You need a supported Agent runtime and access to a Realmroot deployment with at
+least one registered API Resource. When no deployment is specified, the
+Realmroot Skill uses the hosted production realm at `https://id.realmroot.dev`.
 
-## 2. Install the deployment workflow
+## 1. Install the Realmroot Skill
 
-Copy `deploy/realmroot-fork.yml` from the repository to
-`.github/workflows/deploy.yml` in your fork. Configure the Cloudflare secrets and
-email sender described in the deployment documentation, then run **Deploy
-Realmroot Fork**.
+Install the Skill globally for your Agent runtime:
 
-## 3. Bootstrap the realm
-
-Open the deployed URL and complete first-administrator onboarding. Realmroot
-will then route signed-in administrators to the Console.
-
-## 4. Register an application
-
-Create an application in the Console and add its redirect URI. Product
-applications discover the realm through:
-
-```text
-https://your-realm.example.com/api/auth/.well-known/openid-configuration
+```bash
+npx skills add realmroot/realmroot -g --skill realmroot
 ```
 
-Browser and native clients should use authorization code with PKCE.
-Server-side confidential clients authenticate at the token endpoint with their
-registered client credentials.
+For a non-interactive Codex installation:
 
-## 5. Configure the product experience
+```bash
+npx skills add realmroot/realmroot -g --skill realmroot --agent codex -y
+```
 
-Choose login methods, configure connectors, set security policy, and customize
-hosted branding. Users can manage their accounts through the hosted account
-center.
+Verify the installed source and scope:
+
+```bash
+npx skills list -g
+```
+
+The Skill contains the current procedures for setting up Restish, establishing
+identity, discovering resources, requesting access, and invoking the target.
+
+## 2. Give the Agent a real task
+
+Ask for the result, not the authentication steps:
+
+```text
+Use Realmroot to discover and call the private API capability needed to list my active projects.
+```
+
+The Agent will:
+
+1. resolve the Realmroot deployment and establish its stable identity;
+2. inspect the registered resource catalog;
+3. read candidate APIs' live OpenAPI contracts;
+4. select the exact operation and least-privilege scopes;
+5. request access when no matching active grant exists;
+6. resume the original operation after approval.
+
+Discovery and approval are intermediate steps. The task is complete only when
+the target API operation succeeds.
+
+## 3. Approve the identity and authority boundaries
+
+On first protected use, Realmroot opens a hosted enrollment page. Sign in as
+the controller and approve the binding between the current Host and a stable
+Agent identity.
+
+Enrollment does **not** grant business API access. When the Agent needs a
+protected resource, Realmroot presents a separate decision containing:
+
+- the stable Agent;
+- the API Resource and external account, when applicable;
+- the exact scope set and reason;
+- the requested grant lifetime.
+
+The controller's browser session makes the decision but never becomes the
+Agent's CLI principal.
+
+## 4. Let the original operation finish
+
+After approval, the Restish adapter obtains a short-lived DPoP-bound credential
+and calls the selected resource URL directly. Raw access tokens, refresh
+credentials, Host keys, and DPoP private keys stay out of chat and command
+output.
+
+The API validates the token and request proof, requires the operation's scopes,
+and applies its own business rules. Realmroot is not in the business request
+path.
+
+## Run your own realm
+
+Realmroot is open source and deploys to Cloudflare. Each deployment is one
+identity and policy realm.
+
+1. Fork [`realmroot/realmroot`](https://github.com/realmroot/realmroot).
+2. Install `deploy/realmroot-fork.yml` as `.github/workflows/deploy.yml` in the
+   fork.
+3. Configure the Cloudflare secrets and email sender from the
+   [deployment guide](https://github.com/realmroot/realmroot/blob/main/docs/deploy/cloudflare.md).
+4. Run **Deploy Realmroot Fork**, open the deployed URL, and complete first-admin
+   onboarding.
+
+Product applications can then register as OIDC clients. API teams can
+[make an API Agent-ready](/docs/guides/make-an-api-agent-ready/) by registering
+its protected resource URL and live OpenAPI contract.
+
+## Next
+
+- Read [How Realmroot works](/docs/getting-started/how-it-works/) to understand
+  the complete control and data paths.
+- Read [Agent identity and authority](/docs/concepts/agent-authority/) before
+  designing grant or revocation policy.
+- Follow the canonical
+  [Realmroot Skill instructions](https://github.com/realmroot/realmroot/tree/main/skills/realmroot)
+  when exact commands differ from this overview.

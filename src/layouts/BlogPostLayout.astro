@@ -28,7 +28,7 @@ const isChinese = locale === 'zh-CN';
         <h1>{title}</h1>
         <p class="description">{description}</p>
         <div class="article-meta">
-          <span>{publishedAt.toLocaleDateString(locale, { dateStyle: 'long' })}</span>
+          <span>{publishedAt.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })}</span>
           <span>{author}</span>
         </div>
       </header>
@@ -48,4 +48,3 @@ const isChinese = locale === 'zh-CN';
     </aside>
   </div>
 </MarketingLayout>
-

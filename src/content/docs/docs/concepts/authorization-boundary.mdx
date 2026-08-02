@@ -1,0 +1,123 @@
+---
+title: Authorization boundary
+description: Why API code and OpenAPI define permissions while Realmroot manages identity, approval, issuance, and audit.
+---
+
+Realmroot is an identity provider and authorization server, but it is not the
+business permission engine for every API.
+
+The resource server owns permission meaning and final enforcement. Realmroot
+discovers that vocabulary, records approved authority, and issues trustworthy
+claims about it.
+
+```text
+Resource server code + OpenAPI
+        │ defines scopes and operation requirements
+        ▼
+Realmroot identity, roles, requests, approval, and grants
+        │ issues exact scopes and policy context
+        ▼
+Short-lived DPoP-bound access token
+        │ verified with the request and local data
+        ▼
+Resource server makes the final allow / deny decision
+```
+
+## Four separate responsibilities
+
+### 1. Permission definition belongs to the resource server
+
+The API defines:
+
+- which business operations exist;
+- the scope names representing those operations;
+- which OpenAPI operations require each scope;
+- object, tenant, ownership, state, and attribute rules;
+- what happens when a request is allowed or denied.
+
+Realmroot has no first-class business `Permission` resource. A scope is
+requestable only when the live OpenAPI contract declares it through a standard
+OAuth or OIDC security requirement.
+
+### 2. Authorization facts and approval belong to Realmroot
+
+Realmroot manages facts about principals and delegation:
+
+- user, application, organization-member, and stable Agent identities;
+- Agent controllers and home spaces;
+- roles assigned to principals;
+- exact Agent access requests and controller-approved grants;
+- connected target accounts for external resources;
+- grant lifetime, revocation, and audit history.
+
+These facts answer whether Realmroot may issue or broker a requested scope. They
+do not answer whether a concrete business object may be accessed.
+
+### 3. Token issuance expresses the approved boundary
+
+For a native resource, Realmroot validates the audience and scopes against the
+current contract, applies the grant boundary, and signs a short-lived token.
+
+For an external resource, Realmroot presents the connected user's subject
+authority and the stable Agent actor to the target authorization server. The
+target intersects them and issues the final token.
+
+Issuance is an authorization decision, but it is not the final request
+decision.
+
+### 4. Request enforcement belongs to the resource server
+
+The resource server validates the token and DPoP proof, requires the operation's
+scopes, interprets identity and policy context, and evaluates its local data and
+rules. It denies by default when any input is insufficient.
+
+Realmroot claims are inputs to this decision, not a remote allow-or-deny call.
+
+## Scope, role, and local policy are different
+
+| Mechanism | Owner | Purpose |
+| --- | --- | --- |
+| **Scope** | Resource API and OpenAPI | Protocol label for an approved class of actions |
+| **Role** | Realmroot | Named grouping of resource-owned scope references and optional eligibility ceiling |
+| **Grant** | Realmroot controller decision | Exact Agent, resource, account, scopes, reason, and lifetime approved for issuance |
+| **Local policy** | Resource server | Object-level, tenant, ownership, state, and business decision for one request |
+
+A role cannot add scopes to a token by itself. A grant cannot force the API to
+serve a request. A valid scope does not identify a concrete business object.
+
+For example, `documents:read` may authorize the class of read operations while
+the Documents API still verifies that the subject belongs to the document's
+organization and that the document's current state permits Agent access.
+
+## Why OpenAPI stays authoritative
+
+Keeping scope-to-operation mappings beside API code avoids two permission
+definitions drifting apart. Removing a scope from OpenAPI stops new Agent role
+scope updates, requests, approvals, and issuance for that scope.
+
+Realmroot can reject stale references. It cannot repair a stale API contract,
+so resource-server code and OpenAPI must evolve together.
+
+## Native and external modes keep the same ownership
+
+| Responsibility | Native | External |
+| --- | --- | --- |
+| Scope names and operation mapping | Resource OpenAPI | Resource OpenAPI |
+| Agent request and controller grant | Realmroot | Realmroot |
+| Final token issuer | Realmroot | Target authorization server |
+| Object and request enforcement | Resource server | Resource server |
+
+Only the issuer boundary changes. Realmroot never becomes the business request
+proxy in either mode.
+
+## Security consequence
+
+A token can be authentic, unexpired, audience-correct, and properly DPoP-bound
+and still be denied because local policy is not satisfied. That is expected.
+The original service keeps the final decision because it has the code, data,
+and context required to make it correctly.
+
+Read [Agent identity and authority](/docs/concepts/agent-authority/) for the identity and
+grant lifecycle, or the full
+[authorization design](https://github.com/realmroot/realmroot/blob/main/docs/architecture/authorization-boundaries.md)
+for implementation-level semantics.

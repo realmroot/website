@@ -336,7 +336,7 @@ const t = zh
         return (
           <a class="post-card" href={href}>
             <div class="meta">
-              <span>{post.data.publishedAt.toLocaleDateString(locale)}</span>
+              <span>{post.data.publishedAt.toLocaleDateString(locale, { timeZone: 'UTC' })}</span>
               <span>{t.read} ↗</span>
             </div>
             <h3>{post.data.title}</h3>

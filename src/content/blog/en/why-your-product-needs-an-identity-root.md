@@ -4,7 +4,7 @@ description: Authentication is only the front door. A product also needs one exp
 publishedAt: 2026-07-30
 author: Realmroot
 language: en
-featured: true
+featured: false
 ---
 
 Most products begin identity work with a login screen. The first version needs
@@ -15,6 +15,11 @@ Soon there are multiple applications sharing accounts, administrators managing
 security policy, APIs validating access tokens, and automated actors requesting
 authority. At that point, identity is no longer a UI feature. It is part of the
 product's security architecture.
+
+For Realmroot, that identity root is the foundation rather than the final
+outcome. Its purpose is to give useful API capabilities a trustworthy control
+context: which Agent is acting, who controls it, and which exact authority was
+delegated for a task.
 
 ## The boundary matters more than the screen
 
@@ -60,3 +65,23 @@ short-lived, audience-bound, and explicit.
 
 That place is the realm.
 
+## The foundation should lead somewhere
+
+An identity platform can establish reliable principals and policy boundaries,
+but identity alone does not complete an Agent's task. The Agent still needs to
+discover a useful capability, understand its live contract, obtain the exact
+authority needed, and invoke the original service.
+
+Realmroot's Agent Tool Plane builds that result layer on the realm. Existing
+OpenAPI services become discoverable capabilities; controllers approve narrow
+resource grants; short-lived DPoP credentials express the delegation; and the
+Agent calls the API directly.
+
+This is why the identity root and tool plane belong together. Product identity
+provides the people, organizations, applications, and policy context. Existing
+APIs provide the useful actions. Realmroot connects them without creating a
+separate identity silo or moving business authorization out of the resource
+server.
+
+Continue with [The Agent Tool Plane](/docs/concepts/agent-tool-plane/) or
+[How Realmroot works](/docs/getting-started/how-it-works/).

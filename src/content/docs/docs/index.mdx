@@ -6,48 +6,92 @@ description: The Agent tool plane for turning existing OpenAPI services into sec
 **Every API, Agent-ready.**
 
 Realmroot turns existing OpenAPI services into secure, discoverable tools for
-Agents. Resource teams keep the APIs, contracts, and enforcement they already
-operate; they do not need to build and maintain a separate Agent integration.
+Agents. It gives an Agent a reliable path to find the right capability, obtain
+the exact delegated authority needed for the task, and call the original API.
 
-The outcome is a complete operating path: an Agent finds the right tool,
-receives the exact delegated authority it needs, and calls the original service
-directly.
+The API team keeps the service, contract, data, and final authorization
+decision it already owns. It does not need to build and maintain a second
+Agent-specific backend.
 
-## One product, two layers
+<img
+  src="/realmroot-agent-apis.svg"
+  alt="An Agent discovers and authorizes API capabilities through Realmroot, then calls multiple resource servers directly."
+  width="1400"
+  height="900"
+/>
 
-### Agent Tool Plane
+## The missing layer between Agents and APIs
 
-- Register existing API resources and their live OpenAPI contracts
-- Discover available resources and operations at task time
-- Invoke any registered resource through the Realmroot Skill and Restish
-- Expand Agent capability as new resources join, without new Agent-specific backend code
+Most useful digital capabilities already exist behind HTTP APIs. Before an
+Agent can safely use one, it still needs four answers:
 
-### Identity and Trust Infrastructure
+1. **Discover:** what resources and operations are available now?
+2. **Understand:** how should the live operation be invoked?
+3. **Trust:** which stable Agent is acting, and who controls it?
+4. **Authorize:** why should this resource server allow this exact request?
 
-Identity is the foundation, not the final outcome. Realmroot provides the
-stable Agent identity, controller relationship, grant approval, token
-coordination, revocation, and audit needed to make tool use safe.
+A custom tool can answer those questions for one service. Repeating the work
+for every service creates another contract to release, secure, document, and
+keep synchronized with the API. Realmroot provides one reusable operating path
+instead.
 
-The same realm also includes hosted authentication, OIDC, account management,
-and administration for people and applications.
+## One product, two inseparable layers
 
-Tools without trust are unsafe. Identity without tools does not complete a
-task. Realmroot brings both layers together:
+| Layer | What it provides | Result |
+| --- | --- | --- |
+| **Agent Tool Plane** | Resource registration, live discovery, OpenAPI-based invocation, and a shared Agent operating procedure | Existing APIs become composable Agent capabilities |
+| **Identity and Trust Infrastructure** | Product identity, stable Agents, controller relationships, grants, short-lived credentials, revocation, and audit | Every capability call has an explicit principal and authority boundary |
+
+Identity is the foundation, not the final outcome. Tools without trust are
+unsafe; identity without useful tools does not complete a task. Realmroot joins
+the two layers in one flow:
 
 > **Discover broadly. Authorize precisely. Call directly.**
 
-## The responsibility boundary
+## What happens during a task
 
-Realmroot owns registration and discovery, Agent identity, delegated grant
-lifecycle, and short-lived token coordination. It is not an HTTP proxy and
-does not copy business permissions.
+1. A resource team registers its protected API and publishes its live OpenAPI
+   contract.
+2. The Agent discovers available resources through Realmroot.
+3. The Agent reads the selected API contract and chooses the operation and
+   least-privilege scopes required by the task.
+4. Realmroot binds the request to a stable Agent, its controller, one resource,
+   an optional external account, a reason, and an exact scope set.
+5. The controller approves or denies the request and selects the grant
+   lifetime.
+6. Realmroot issues a short-lived DPoP-bound token, or coordinates issuance
+   with the resource's existing authorization server.
+7. The Agent calls the resource server directly. The resource server validates
+   the credential and applies its own object-level and business rules.
 
-The resource server remains the final authorization boundary. It owns its API,
-OpenAPI contract, scope semantics, object-level permissions, data, business
-rules, and the final allow-or-deny decision.
+Read [How Realmroot works](/docs/getting-started/how-it-works/) for the complete
+request path.
 
-## Start here
+## Realmroot does not replace the API
 
-Follow the [quick start](/docs/getting-started/quick-start/) to deploy a realm,
-create its first administrator, and register your first product application.
+Realmroot is not an HTTP proxy, a copied business-permission database, or a
+claim that every interaction needs to use OpenAPI. Purpose-built tools remain
+useful for specialized protocols and highly curated experiences.
 
+For an existing HTTP API, Realmroot deliberately keeps these responsibilities
+with the resource server:
+
+- API behavior and the OpenAPI contract
+- business scope definitions and operation mappings
+- tenancy, ownership, object state, and other local policy
+- token validation and the final allow-or-deny decision
+
+Realmroot supplies trustworthy identity and delegated-authority inputs. A valid
+token can still be denied by the resource server.
+
+## Choose your path
+
+- **Agent users and developers:** follow the [quick start](/docs/getting-started/quick-start/)
+  to install the Skill and use a registered private capability.
+- **API teams:** learn about the [Agent Tool Plane](/docs/concepts/agent-tool-plane/)
+  and [make an API Agent-ready](/docs/guides/make-an-api-agent-ready/).
+- **Security teams:** review [Agent identity and authority](/docs/concepts/agent-authority/)
+  and the [authorization boundary](/docs/concepts/authorization-boundary/).
+- **Product teams:** use Realmroot as the
+  [identity and trust foundation](/docs/guides/product-identity-root/) for
+  people, applications, and Agents.
