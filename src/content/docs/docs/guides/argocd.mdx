@@ -1,0 +1,169 @@
+---
+title: Argo CD
+description: Authenticate Argo CD users with Realmroot and map Organization Teams to Argo CD RBAC roles.
+---
+
+Argo CD validates Realmroot OIDC tokens and uses Realmroot Team names as RBAC
+groups. Argo CD remains the authorization system: Realmroot roles and Resource
+scopes do not grant Argo CD permissions.
+
+Use a separate Application from Kubernetes CLI access because Argo CD is a
+confidential web client and stores a client secret.
+
+## Create the Realmroot Application
+
+Create one Application in the Organization that owns the Argo CD instances:
+
+| Setting | Value |
+| --- | --- |
+| Client type | `confidential_web` |
+| Visibility | `private` |
+| OIDC scopes | `openid profile email groups` |
+| Owner | The Organization that owns Argo CD |
+
+For each Argo CD instance, add its exact callback URI:
+
+```text
+https://argocd.example.com/auth/callback
+https://argocd-staging.example.com/auth/callback
+```
+
+One Application can serve multiple instances, but every instance then shares
+the same client ID and secret. Use separate Applications when independent
+secret rotation or incident boundaries are required.
+
+Copy the client ID and the one-time client secret into a secret manager. Never
+commit the secret to a Kubernetes manifest or GitOps repository.
+
+## Store the client secret
+
+Argo CD can resolve an OIDC secret from `argocd-secret`. This command reads the
+value interactively and avoids placing it directly in the manifest:
+
+```shell
+read -s ARGOCD_OIDC_CLIENT_SECRET
+kubectl -n argocd patch secret argocd-secret --type merge \
+  --patch-file <(jq -n --arg value "$ARGOCD_OIDC_CLIENT_SECRET" \
+    '{stringData: {"oidc.realmroot.clientSecret": $value}}')
+unset ARGOCD_OIDC_CLIENT_SECRET
+```
+
+This form requires `jq` and a shell with process substitution. It keeps the
+secret out of the command arguments and shell history. For production, prefer
+your secret manager's Kubernetes integration.
+
+## Configure OIDC
+
+Merge this data into `argocd-cm`:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  url: https://argocd.example.com
+  oidc.config: |
+    name: Realmroot
+    issuer: https://id.example.com/api/auth
+    clientID: ARGOCD_APPLICATION_CLIENT_ID
+    clientSecret: $oidc.realmroot.clientSecret
+    requestedScopes:
+      - openid
+      - profile
+      - email
+      - groups
+```
+
+The `url` must match the public Argo CD origin whose callback is registered in
+Realmroot. Do not put the secret value directly in `oidc.config`.
+
+Apply the ConfigMap and restart the server only if your Argo CD version does
+not reload it automatically:
+
+```shell
+kubectl apply -f argocd-cm.yaml
+kubectl -n argocd rollout restart deployment argocd-server
+kubectl -n argocd rollout status deployment argocd-server
+```
+
+## Map Teams to Argo CD roles
+
+Merge a least-privilege policy into `argocd-rbac-cm`:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+data:
+  scopes: '[groups]'
+  policy.csv: |
+    g, platform-admins, role:admin
+
+    p, role:developers, applications, get, */*, allow
+    p, role:developers, applications, sync, */*, allow
+    p, role:developers, logs, get, */*, allow
+    g, developers, role:developers
+
+    p, role:auditors, applications, get, */*, allow
+    p, role:auditors, logs, get, */*, allow
+    g, auditors, role:auditors
+```
+
+Replace the example resource patterns with the narrowest AppProject and
+Application patterns your organization needs. Avoid a broad `policy.default`;
+otherwise a successfully authenticated member may receive permissions without
+an explicit Team mapping.
+
+Validate the policy before applying it when your Argo CD release includes the
+RBAC utility:
+
+```shell
+argocd admin settings rbac validate --policy-file argocd-rbac-cm.yaml
+```
+
+## Verify browser and CLI login
+
+Open the Argo CD login page and select **Log in via Realmroot**, then verify the
+current user's groups and permissions:
+
+```shell
+argocd login argocd.example.com --sso
+argocd account get-user-info
+argocd app list
+```
+
+The user info must contain the expected Realmroot Team names. Test at least one
+allowed and one denied operation. A successful login without an applicable `g`
+mapping proves authentication only, not authorization.
+
+Common failures:
+
+- `redirect_uri` mismatch: register the exact public Argo CD callback URI.
+- Login succeeds but access is denied: confirm `groups` was requested, appears
+  in the ID token, and matches `policy.csv` exactly.
+- CLI opens the browser but does not finish: make sure the local callback port
+  is free and the Argo CD public URL is reachable from the browser.
+- `invalid_client`: rotate the Realmroot secret and update `argocd-secret`.
+
+## Rotation, revocation, and rollback
+
+Rotate the client secret in Realmroot, update every Argo CD instance that
+shares the Application, and restart the servers. Remove the old secret only
+after all instances have passed login verification.
+
+Removing a user from the Organization invalidates refresh after membership is
+rechecked; an issued ten-minute ID token remains usable until expiry. Removing
+a user from a Team changes the groups in the next refreshed token.
+
+For rollback, restore the previously exported `argocd-cm` and
+`argocd-rbac-cm`, then remove `oidc.realmroot.clientSecret` only after the old
+login method works. Keep the local Argo CD administrator credential until SSO
+and RBAC are verified.
+
+See Argo CD's official documentation for
+[OIDC configuration](https://argo-cd.readthedocs.io/en/stable/operator-manual/user-management/)
+and [RBAC](https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/).

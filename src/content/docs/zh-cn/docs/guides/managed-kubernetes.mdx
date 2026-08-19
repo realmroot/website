@@ -1,0 +1,277 @@
+---
+title: 托管 Kubernetes
+description: 在支持的托管 Kubernetes 控制面上手动配置 Realmroot OIDC。
+---
+
+不同托管 Kubernetes 服务提供不同的控制面 API，不存在一个能在所有平台启用任意 OIDC
+Issuer 的通用 API。本指南记录当前支持的手动接入路径和运维边界。
+
+修改集群前请先完成 [Kubernetes 与 OIDC](/zh-cn/docs/guides/kubernetes-oidc/)，并保留现有
+云平台管理员访问路径。替换所有大写占位符。应用或回滚任何示例前，先读取并保存云平台的
+完整当前配置。
+
+## Amazon EKS
+
+每个 EKS 集群只能配置一个外部 OIDC Identity Provider。Realmroot Issuer 必须可以从公网
+访问，并使用公共信任的 TLS 证书。IAM Authentication 会继续保留。
+
+创建不含 Secret 的 Provider 请求：
+
+```json
+{
+  "identityProviderConfigName": "realmroot",
+  "issuerUrl": "https://id.example.com/api/auth",
+  "clientId": "APPLICATION_CLIENT_ID",
+  "usernameClaim": "email",
+  "usernamePrefix": "-",
+  "groupsClaim": "groups",
+  "requiredClaims": {
+    "urn:realmroot:params:oauth:org": "REALMROOT_ORGANIZATION_ID"
+  }
+}
+```
+
+```shell
+aws eks associate-identity-provider-config \
+  --region AWS_REGION \
+  --cluster-name CLUSTER_NAME \
+  --client-request-token IDEMPOTENCY_TOKEN \
+  --oidc file://realmroot-eks-oidc.json
+```
+
+响应中包含 Update ID。测试前轮询更新状态：
+
+```shell
+aws eks describe-update \
+  --region AWS_REGION \
+  --name CLUSTER_NAME \
+  --update-id UPDATE_ID
+```
+
+只有更新达到 `Successful` 后才创建 RBAC Binding。回滚时先通过
+`list-identity-provider-configs` 找到准确 Provider name，再调用
+`disassociate-identity-provider-config`。在验证其他管理员路径前不要移除它。
+
+常见问题包括 Issuer 不可访问、集群已有外部 Provider、Audience 错误或登录时没有请求
+`groups` Scope。参见官方
+[EKS OIDC 指南](https://docs.aws.amazon.com/eks/latest/userguide/authenticate-oidc-identity-provider.html)
+和 [AssociateIdentityProviderConfig API](https://docs.aws.amazon.com/eks/latest/APIReference/API_AssociateIdentityProviderConfig.html)。
+
+## 阿里云 ACK Pro
+
+只有符合条件的 ACK Pro、Serverless Pro、Edge Pro 和 Lingjun 集群支持自定义
+kube-apiserver 参数。保存参数会重启控制面，而且自定义对象可能覆盖现有自定义值。请安排
+维护窗口，并先导出完整当前参数对象。
+
+把以下 OIDC 片段合并到现有 kube-apiserver 配置中，不要直接替换完整对象：
+
+```json
+{
+  "oidcIssuerURL": "https://id.example.com/api/auth",
+  "oidcClientId": "APPLICATION_CLIENT_ID",
+  "oidcUsernameClaim": "email",
+  "oidcUsernamePrefix": "-",
+  "oidcGroupsClaim": "groups",
+  "oidcGroupsPrefix": ""
+}
+```
+
+在 ACK Console 中打开集群，进入 **组件管理**，找到 **Kube API Server** 并修改配置。需要
+API 自动化时，使用组件 ID `kube-apiserver` 调用 `ModifyClusterAddon`：
+
+```text
+POST /clusters/CLUSTER_ID/components/kube-apiserver/config
+```
+
+调用者需要 `cs:ModifyClusterAddon` 权限。请求体把完整配置封装成 JSON 编码的 `config`
+字符串。控制面恢复健康后再验证登录和 RBAC。回滚时恢复之前导出的完整配置，不要提交不完整
+的空对象。
+
+常见失败包括：集群规格不支持、覆盖而不是合并现有组件配置、管控面无法访问 Issuer，或者在
+kube-apiserver 重启完成前开始测试。
+
+参见官方
+[管控面参数文档](https://www.alibabacloud.com/help/en/ack/customize-ack-pro-control-plane-component-parameters-1693463976408)
+和 [ModifyClusterAddon API](https://www.alibabacloud.com/help/doc-detail/2668092.html)。
+
+## 华为云 CCE
+
+CCE 通过集群配置提供 OIDC 设置。修改 kube-apiserver 参数会重启 kube-apiserver，并断开
+现有长连接。请确认集群版本支持所用字段，并保证控制面能够访问 Issuer。
+
+在 CCE Console 打开 **设置 > 集群访问**，启用 OIDC 并设置：
+
+| 参数 | 值 |
+| --- | --- |
+| `oidc-issuer-url` | `https://id.example.com/api/auth` |
+| `oidc-client-id` | `APPLICATION_CLIENT_ID` |
+| `oidc-username-claim` | `email` |
+| `oidc-username-prefix` | `-` |
+| `oidc-groups-claim` | `groups` |
+| `oidc-groups-prefix` | 空 |
+
+对应的控制面 API 为：
+
+```text
+PUT /api/v3/projects/PROJECT_ID/clusters/CLUSTER_ID/nodepools/master/configuration
+```
+
+把以下条目合并到完整的当前 `kube-apiserver` Package：
+
+```json
+{
+  "kind": "Configuration",
+  "apiVersion": "v3",
+  "metadata": { "name": "configuration" },
+  "spec": {
+    "packages": [
+      {
+        "name": "kube-apiserver",
+        "configurations": [
+          { "name": "oidc-enable", "value": true },
+          { "name": "oidc-issuer-url", "value": "https://id.example.com/api/auth" },
+          { "name": "oidc-client-id", "value": "APPLICATION_CLIENT_ID" },
+          { "name": "oidc-username-claim", "value": "email" },
+          { "name": "oidc-username-prefix", "value": "-" },
+          { "name": "oidc-groups-claim", "value": "groups" },
+          { "name": "oidc-groups-prefix", "value": "" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+回滚时恢复导出的 Package。参见 CCE 官方
+[集群配置](https://support.huaweicloud.com/intl/en-us/usermanual-cce/cce_10_0213.html)
+和[外部 OIDC 认证](https://support.huaweicloud.com/intl/en-us/usermanual-cce/cce_10_0997.html)。
+
+常见失败包括：CCE 或 Kubernetes 版本不支持、请求遗漏已有 kube-apiserver 配置、Issuer
+不可达，或者 Client ID 与 Token Audience 不一致。请先等待管控面重启完成，再排查登录问题。
+
+## OCI Kubernetes Engine
+
+OKE 外部 OIDC 认证要求 Enhanced Cluster、Kubernetes 1.21 或更高版本，以及新集群或符合
+条件的 VCN-native API Endpoint。API Endpoint Subnet 必须能够访问 Realmroot Issuer。
+OCI IAM Authentication 会继续保留。
+
+导出当前 Cluster Representation，把以下属性合并到 `options`，保存为
+`oke-realmroot.json`：
+
+```json
+{
+  "options": {
+    "openIdConnectTokenAuthenticationConfig": {
+      "isOpenIdConnectAuthEnabled": true,
+      "issuerUrl": "https://id.example.com/api/auth",
+      "clientId": "APPLICATION_CLIENT_ID",
+      "usernameClaim": "email",
+      "usernamePrefix": "",
+      "groupsClaim": "groups",
+      "groupsPrefix": "",
+      "requiredClaims": [
+        {
+          "key": "urn:realmroot:params:oauth:org",
+          "value": "REALMROOT_ORGANIZATION_ID"
+        }
+      ],
+      "signingAlgorithms": ["RS256"]
+    }
+  }
+}
+```
+
+```shell
+oci ce cluster update \
+  --cluster-id CLUSTER_OCID \
+  --from-json file://oke-realmroot.json
+```
+
+Kubernetes 1.30 或更高版本的 OKE 也可以使用 Base64 编码的 Kubernetes Authentication
+Configuration 配置多个 Issuer。除非明确需要多个 Issuer，否则使用单 Issuer 方式。
+
+回滚时更新完整保存配置，把 `isOpenIdConnectAuthEnabled` 设为 `false`。参见官方
+[OKE 外部 OIDC 指南](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengOpenIDConnect-Authentication.htm)。
+
+常见失败包括：使用 Basic 或其他不符合条件的集群、API Endpoint 子网无法访问 Issuer、
+Client ID 或必需的 Organization Claim 不匹配，或者集群更新尚未完成。
+
+## Google Kubernetes Engine
+
+GKE 推荐的外部身份路径是 Workforce Identity Federation。它属于 Organization 级 Google
+IAM 集成，不是 kube-apiserver OIDC 配置。不要使用本站的通用 kubelogin kubeconfig。
+
+为 Google Workforce Identity Federation 创建独立的 Realmroot Private
+`confidential_web` Application，请求 `openid profile email groups`，并添加以下准确的
+Google Callback URI：
+
+```text
+https://auth.cloud.google/signin-callback/locations/global/workforcePools/WORKFORCE_POOL_ID/providers/PROVIDER_ID
+```
+
+创建 Pool 和 OIDC Provider。Provider 必须把 Realmroot Teams 映射到 `google.groups`，并
+限制 Realmroot Organization：
+
+```shell
+gcloud iam workforce-pools create WORKFORCE_POOL_ID \
+  --organization=GOOGLE_ORGANIZATION_NUMBER \
+  --location=global \
+  --display-name="Realmroot" \
+  --session-duration=3600s
+
+gcloud iam workforce-pools providers create-oidc PROVIDER_ID \
+  --location=global \
+  --workforce-pool=WORKFORCE_POOL_ID \
+  --issuer-uri=https://id.example.com/api/auth \
+  --client-id=WORKFORCE_APPLICATION_CLIENT_ID \
+  --client-secret-value=WORKFORCE_APPLICATION_CLIENT_SECRET \
+  --attribute-mapping="google.subject=assertion.sub,google.groups=assertion.groups" \
+  --attribute-condition="assertion['urn:realmroot:params:oauth:org']=='REALMROOT_ORGANIZATION_ID'" \
+  --web-sso-response-type=code \
+  --web-sso-assertion-claims-behavior=merge-user-info-over-id-token-claims \
+  --web-sso-additional-scopes=profile,email,groups
+```
+
+包含 Client Secret 的命令会进入敏感 Shell History。生产环境应使用 Google 支持的 Secret
+输入或自动化机制。
+
+Kubernetes RBAC 应绑定 Google Group Principal，而不是原始 Team name：
+
+```yaml
+subjects:
+  - kind: Group
+    name: principalSet://iam.googleapis.com/locations/global/workforcePools/WORKFORCE_POOL_ID/group/developers
+    apiGroup: rbac.authorization.k8s.io
+```
+
+用户创建并使用不含 Secret 的 Google Login Config：
+
+```shell
+gcloud iam workforce-pools create-login-config \
+  locations/global/workforcePools/WORKFORCE_POOL_ID/providers/PROVIDER_ID \
+  --output-file=realmroot-google-login.json
+
+gcloud auth login --login-config=realmroot-google-login.json
+gcloud container clusters get-credentials CLUSTER_NAME \
+  --location=GKE_LOCATION \
+  --project=GCP_PROJECT_ID
+kubectl auth whoami
+```
+
+删除 Provider 前先禁用它；删除 Pool 前移除相关 IAM 和 Kubernetes Binding。参见 Google
+官方 [GKE 外部身份指南](https://cloud.google.com/kubernetes-engine/docs/how-to/oidc)和
+[Workforce Identity Federation 配置](https://cloud.google.com/iam/docs/configuring-workforce-identity-federation)。
+
+常见失败包括：Callback URI 不匹配、Provider Scope 缺少 `groups`、Claim Mapping 没有
+生成 `google.groups`、Organization 条件拒绝 Token，或者绑定了原始 Team name 而不是
+Google Workforce Pool Principal。Provider 变更会影响依赖该 Pool 的所有集群和用户，
+因此移除原有登录路径前应先使用非管理员身份验证。
+
+## 不提供生产配置步骤的平台
+
+- **AKS：** External JWT Authenticator 支持任意 OIDC Provider，但 Azure API 仍为 Preview。
+  在 Microsoft 发布稳定契约前，不作为 Realmroot 生产集成。
+- **DigitalOcean DOKS：** DOKS 要求 ID Token 包含 `team_role`，并将其转换为
+  `do-role-name:*`。Realmroot 有意使用 `groups` 签发 Teams，当前不签发 `team_role`。
+- **腾讯 TKE、IBM Cloud Kubernetes：** 其受支持身份路径没有提供稳定的任意外部 OIDC
+  Issuer 直接配置方式。

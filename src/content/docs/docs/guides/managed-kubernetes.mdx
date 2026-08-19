@@ -1,0 +1,302 @@
+---
+title: Managed Kubernetes
+description: Configure Realmroot OIDC manually on supported managed Kubernetes control planes.
+---
+
+Managed Kubernetes services expose different control-plane APIs. There is no
+portable API that enables an arbitrary OIDC issuer everywhere. This guide
+documents the supported manual paths and their operational boundaries.
+
+Complete [Kubernetes and OIDC](/docs/guides/kubernetes-oidc/) and preserve an
+existing cloud-administrator access path before changing a cluster. Replace all
+uppercase placeholders. Read and save the current provider configuration before
+applying or rolling back any example.
+
+## Amazon EKS
+
+EKS supports one external OIDC identity-provider configuration per cluster. The
+Realmroot issuer must be publicly reachable and use a publicly trusted TLS
+certificate. IAM authentication remains enabled.
+
+Write the provider request without secrets:
+
+```json
+{
+  "identityProviderConfigName": "realmroot",
+  "issuerUrl": "https://id.example.com/api/auth",
+  "clientId": "APPLICATION_CLIENT_ID",
+  "usernameClaim": "email",
+  "usernamePrefix": "-",
+  "groupsClaim": "groups",
+  "requiredClaims": {
+    "urn:realmroot:params:oauth:org": "REALMROOT_ORGANIZATION_ID"
+  }
+}
+```
+
+```shell
+aws eks associate-identity-provider-config \
+  --region AWS_REGION \
+  --cluster-name CLUSTER_NAME \
+  --client-request-token IDEMPOTENCY_TOKEN \
+  --oidc file://realmroot-eks-oidc.json
+```
+
+The response contains an update ID. Poll it before testing:
+
+```shell
+aws eks describe-update \
+  --region AWS_REGION \
+  --name CLUSTER_NAME \
+  --update-id UPDATE_ID
+```
+
+Create RBAC bindings only after the update reaches `Successful`. To roll back,
+find the exact provider name with `list-identity-provider-configs`, then call
+`disassociate-identity-provider-config`. Do not remove it until another
+administrator path has been tested.
+
+Common failures are an unreachable issuer, an existing external provider,
+wrong audience, or an ID token that omitted the `groups` scope. See the
+[EKS OIDC guide](https://docs.aws.amazon.com/eks/latest/userguide/authenticate-oidc-identity-provider.html)
+and [AssociateIdentityProviderConfig API](https://docs.aws.amazon.com/eks/latest/APIReference/API_AssociateIdentityProviderConfig.html).
+
+## Alibaba Cloud ACK Pro
+
+Custom kube-apiserver parameters are available only for eligible ACK Pro,
+Serverless Pro, Edge Pro, and Lingjun clusters. Saving them restarts the control
+plane, and the custom object can replace existing custom values. Schedule a
+maintenance window and export the entire current parameter object first.
+
+Use this OIDC fragment inside the existing kube-apiserver configuration; merge
+it with every current custom value rather than replacing the object blindly:
+
+```json
+{
+  "oidcIssuerURL": "https://id.example.com/api/auth",
+  "oidcClientId": "APPLICATION_CLIENT_ID",
+  "oidcUsernameClaim": "email",
+  "oidcUsernamePrefix": "-",
+  "oidcGroupsClaim": "groups",
+  "oidcGroupsPrefix": ""
+}
+```
+
+In the ACK Console, open the cluster, choose **Add-ons**, locate **Kube API
+Server**, and edit its configuration. For API automation, call
+`ModifyClusterAddon` with component ID `kube-apiserver`; its request path is:
+
+```text
+POST /clusters/CLUSTER_ID/components/kube-apiserver/config
+```
+
+The caller needs `cs:ModifyClusterAddon`. The request body wraps the complete
+configuration as a JSON-encoded `config` string. After the control plane is
+healthy, verify login and RBAC. Roll back by restoring the previously exported
+complete configuration, not by submitting an incomplete empty object.
+
+Common failures are using an unsupported cluster edition, replacing rather
+than merging the current component configuration, an issuer the control plane
+cannot reach, or testing before the kube-apiserver restart has completed.
+
+See the official
+[control-plane parameter reference](https://www.alibabacloud.com/help/en/ack/customize-ack-pro-control-plane-component-parameters-1693463976408)
+and [ModifyClusterAddon API](https://www.alibabacloud.com/help/doc-detail/2668092.html).
+
+## Huawei Cloud CCE
+
+CCE exposes OIDC settings through cluster configuration. Changing
+kube-apiserver parameters restarts kube-apiserver and disconnects persistent
+API connections. Confirm the cluster version supports every field and make sure
+the control plane can reach the issuer.
+
+In the CCE Console, open **Settings > Cluster Access**, enable OIDC, and set:
+
+| Parameter | Value |
+| --- | --- |
+| `oidc-issuer-url` | `https://id.example.com/api/auth` |
+| `oidc-client-id` | `APPLICATION_CLIENT_ID` |
+| `oidc-username-claim` | `email` |
+| `oidc-username-prefix` | `-` |
+| `oidc-groups-claim` | `groups` |
+| `oidc-groups-prefix` | empty |
+
+The equivalent control-plane API is:
+
+```text
+PUT /api/v3/projects/PROJECT_ID/clusters/CLUSTER_ID/nodepools/master/configuration
+```
+
+Merge these entries into the complete current `kube-apiserver` package:
+
+```json
+{
+  "kind": "Configuration",
+  "apiVersion": "v3",
+  "metadata": { "name": "configuration" },
+  "spec": {
+    "packages": [
+      {
+        "name": "kube-apiserver",
+        "configurations": [
+          { "name": "oidc-enable", "value": true },
+          { "name": "oidc-issuer-url", "value": "https://id.example.com/api/auth" },
+          { "name": "oidc-client-id", "value": "APPLICATION_CLIENT_ID" },
+          { "name": "oidc-username-claim", "value": "email" },
+          { "name": "oidc-username-prefix", "value": "-" },
+          { "name": "oidc-groups-claim", "value": "groups" },
+          { "name": "oidc-groups-prefix", "value": "" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Restore the exported package to roll back. See CCE's
+[cluster configuration](https://support.huaweicloud.com/intl/en-us/usermanual-cce/cce_10_0213.html)
+and [external OIDC authentication](https://support.huaweicloud.com/intl/en-us/usermanual-cce/cce_10_0997.html)
+documentation.
+
+Common failures are an unsupported CCE or Kubernetes version, a request that
+omits existing kube-apiserver settings, an unreachable issuer, or a client ID
+that does not match the token audience. Wait for the control-plane restart to
+finish before diagnosing login.
+
+## OCI Kubernetes Engine
+
+OKE external OIDC authentication requires an enhanced cluster, Kubernetes
+1.21 or later, and either a new cluster or an eligible VCN-native API endpoint.
+The API endpoint subnet must be able to reach the Realmroot issuer. OCI IAM
+authentication remains available.
+
+Export the current cluster representation, merge this property under
+`options`, and save it as `oke-realmroot.json`:
+
+```json
+{
+  "options": {
+    "openIdConnectTokenAuthenticationConfig": {
+      "isOpenIdConnectAuthEnabled": true,
+      "issuerUrl": "https://id.example.com/api/auth",
+      "clientId": "APPLICATION_CLIENT_ID",
+      "usernameClaim": "email",
+      "usernamePrefix": "",
+      "groupsClaim": "groups",
+      "groupsPrefix": "",
+      "requiredClaims": [
+        {
+          "key": "urn:realmroot:params:oauth:org",
+          "value": "REALMROOT_ORGANIZATION_ID"
+        }
+      ],
+      "signingAlgorithms": ["RS256"]
+    }
+  }
+}
+```
+
+```shell
+oci ce cluster update \
+  --cluster-id CLUSTER_OCID \
+  --from-json file://oke-realmroot.json
+```
+
+For Kubernetes 1.30 or later, OKE can also consume a base64-encoded Kubernetes
+authentication configuration file for multiple issuers. Use the single-issuer
+form unless multiple issuers are an explicit requirement.
+
+To roll back, update the complete saved configuration with
+`isOpenIdConnectAuthEnabled` set to `false`. See the official
+[OKE external OIDC guide](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengOpenIDConnect-Authentication.htm).
+
+Common failures are using a basic or otherwise ineligible cluster, no network
+route from the API endpoint subnet to the issuer, a mismatched client ID or
+required Organization claim, or testing before the cluster update completes.
+
+## Google Kubernetes Engine
+
+GKE's recommended external-identity path is Workforce Identity Federation. It
+is an organization-level Google IAM integration, not a kube-apiserver OIDC
+configuration. Do not use the generic kubelogin kubeconfig from this site.
+
+Create a separate private Realmroot `confidential_web` Application for Google
+Workforce Identity Federation. Request `openid profile email groups`, and add
+this exact Google callback URI:
+
+```text
+https://auth.cloud.google/signin-callback/locations/global/workforcePools/WORKFORCE_POOL_ID/providers/PROVIDER_ID
+```
+
+Create a pool and OIDC provider. The provider must map Realmroot Teams to
+`google.groups` and restrict the Realmroot Organization:
+
+```shell
+gcloud iam workforce-pools create WORKFORCE_POOL_ID \
+  --organization=GOOGLE_ORGANIZATION_NUMBER \
+  --location=global \
+  --display-name="Realmroot" \
+  --session-duration=3600s
+
+gcloud iam workforce-pools providers create-oidc PROVIDER_ID \
+  --location=global \
+  --workforce-pool=WORKFORCE_POOL_ID \
+  --issuer-uri=https://id.example.com/api/auth \
+  --client-id=WORKFORCE_APPLICATION_CLIENT_ID \
+  --client-secret-value=WORKFORCE_APPLICATION_CLIENT_SECRET \
+  --attribute-mapping="google.subject=assertion.sub,google.groups=assertion.groups" \
+  --attribute-condition="assertion['urn:realmroot:params:oauth:org']=='REALMROOT_ORGANIZATION_ID'" \
+  --web-sso-response-type=code \
+  --web-sso-assertion-claims-behavior=merge-user-info-over-id-token-claims \
+  --web-sso-additional-scopes=profile,email,groups
+```
+
+Treat the command containing the client secret as sensitive shell history. Use
+Google's supported secret-input or automation mechanism in production.
+
+Grant Kubernetes RBAC to the Google group principal, not to the raw Team name:
+
+```yaml
+subjects:
+  - kind: Group
+    name: principalSet://iam.googleapis.com/locations/global/workforcePools/WORKFORCE_POOL_ID/group/developers
+    apiGroup: rbac.authorization.k8s.io
+```
+
+Users create and use a non-secret Google login configuration:
+
+```shell
+gcloud iam workforce-pools create-login-config \
+  locations/global/workforcePools/WORKFORCE_POOL_ID/providers/PROVIDER_ID \
+  --output-file=realmroot-google-login.json
+
+gcloud auth login --login-config=realmroot-google-login.json
+gcloud container clusters get-credentials CLUSTER_NAME \
+  --location=GKE_LOCATION \
+  --project=GCP_PROJECT_ID
+kubectl auth whoami
+```
+
+Disable the provider before deleting it, and remove related IAM and Kubernetes
+bindings before deleting the pool. See Google's
+[GKE external identity guide](https://cloud.google.com/kubernetes-engine/docs/how-to/oidc)
+and [Workforce Identity Federation configuration](https://cloud.google.com/iam/docs/configuring-workforce-identity-federation).
+
+Common failures are a callback URI mismatch, omitting `groups` from the
+provider scopes, a claim mapping that does not produce `google.groups`, an
+Organization condition that rejects the token, or binding the raw Team name
+instead of the Google workforce-pool principal. Provider changes affect every
+cluster and user that relies on that pool, so test with a non-administrator
+identity before removing an existing login path.
+
+## Platforms not covered by production instructions
+
+- **AKS:** external JWT Authenticators support arbitrary OIDC providers, but
+  the Azure API remains Preview. Do not use it as a production Realmroot
+  integration until Microsoft publishes a stable contract.
+- **DigitalOcean DOKS:** DOKS requires `team_role` in the ID token and converts
+  it to `do-role-name:*`. Realmroot intentionally issues Teams as `groups` and
+  does not currently issue `team_role`.
+- **Tencent TKE and IBM Cloud Kubernetes:** their supported identity paths do
+  not expose a stable direct configuration for an arbitrary external OIDC
+  issuer.

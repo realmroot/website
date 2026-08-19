@@ -1,0 +1,157 @@
+---
+title: Argo CD
+description: 使用 Realmroot 认证 Argo CD 用户，并把 Organization Team 映射到 Argo CD RBAC Role。
+---
+
+Argo CD 验证 Realmroot OIDC Token，并把 Realmroot Team name 当作 RBAC Group。Argo CD
+仍然是授权系统：Realmroot Role 和 Resource Scope 不会授予 Argo CD 权限。
+
+Argo CD 是保存 Client Secret 的 Confidential Web Client，因此必须与 Kubernetes CLI 使用
+不同的 Application。
+
+## 创建 Realmroot Application
+
+在拥有 Argo CD 实例的 Organization 中创建一个 Application：
+
+| 设置 | 值 |
+| --- | --- |
+| Client type | `confidential_web` |
+| Visibility | `private` |
+| OIDC scopes | `openid profile email groups` |
+| Owner | 拥有 Argo CD 的 Organization |
+
+为每个 Argo CD 实例添加准确的 Callback URI：
+
+```text
+https://argocd.example.com/auth/callback
+https://argocd-staging.example.com/auth/callback
+```
+
+一个 Application 可以服务多个实例，但这些实例会共享 Client ID 和 Secret。如果实例需要
+独立的 Secret Rotation 或事件隔离边界，应使用不同 Application。
+
+把 Client ID 和只显示一次的 Client Secret 写入 Secret Manager。不要把 Secret 提交到
+Kubernetes Manifest 或 GitOps 仓库。
+
+## 保存 Client Secret
+
+Argo CD 可以从 `argocd-secret` 解析 OIDC Secret。以下命令交互式读取 Secret，避免把它直接
+写进 Manifest：
+
+```shell
+read -s ARGOCD_OIDC_CLIENT_SECRET
+kubectl -n argocd patch secret argocd-secret --type merge \
+  --patch-file <(jq -n --arg value "$ARGOCD_OIDC_CLIENT_SECRET" \
+    '{stringData: {"oidc.realmroot.clientSecret": $value}}')
+unset ARGOCD_OIDC_CLIENT_SECRET
+```
+
+这种方式需要 `jq` 和支持 Process Substitution 的 Shell，Secret 不会进入命令参数或 Shell
+History。生产环境优先使用 Secret Manager 的 Kubernetes 集成。
+
+## 配置 OIDC
+
+把以下 Data 合并到 `argocd-cm`：
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  url: https://argocd.example.com
+  oidc.config: |
+    name: Realmroot
+    issuer: https://id.example.com/api/auth
+    clientID: ARGOCD_APPLICATION_CLIENT_ID
+    clientSecret: $oidc.realmroot.clientSecret
+    requestedScopes:
+      - openid
+      - profile
+      - email
+      - groups
+```
+
+`url` 必须匹配在 Realmroot 注册 Callback 的 Argo CD 公网 Origin。不要把 Secret Value
+直接放进 `oidc.config`。
+
+应用 ConfigMap；只有 Argo CD 版本不会自动重新加载时才重启 Server：
+
+```shell
+kubectl apply -f argocd-cm.yaml
+kubectl -n argocd rollout restart deployment argocd-server
+kubectl -n argocd rollout status deployment argocd-server
+```
+
+## 把 Team 映射到 Argo CD Role
+
+把最小权限策略合并到 `argocd-rbac-cm`：
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+data:
+  scopes: '[groups]'
+  policy.csv: |
+    g, platform-admins, role:admin
+
+    p, role:developers, applications, get, */*, allow
+    p, role:developers, applications, sync, */*, allow
+    p, role:developers, logs, get, */*, allow
+    g, developers, role:developers
+
+    p, role:auditors, applications, get, */*, allow
+    p, role:auditors, logs, get, */*, allow
+    g, auditors, role:auditors
+```
+
+把示例 Resource Pattern 替换成 Organization 所需的最小 AppProject 和 Application
+Pattern。避免设置宽泛的 `policy.default`，否则成功认证但没有明确 Team Mapping 的成员也可能
+获得权限。
+
+如果所用 Argo CD 版本包含 RBAC Utility，应在应用前验证策略：
+
+```shell
+argocd admin settings rbac validate --policy-file argocd-rbac-cm.yaml
+```
+
+## 验证浏览器和 CLI 登录
+
+打开 Argo CD 登录页并选择 **Log in via Realmroot**，然后验证当前用户的 Groups 和权限：
+
+```shell
+argocd login argocd.example.com --sso
+argocd account get-user-info
+argocd app list
+```
+
+User Info 必须包含预期的 Realmroot Team names。至少测试一个允许操作和一个拒绝操作。登录
+成功但没有匹配的 `g` Mapping，只能证明认证成功，不能证明授权成功。
+
+常见问题：
+
+- `redirect_uri` 不匹配：注册准确的 Argo CD 公网 Callback URI。
+- 登录成功但拒绝访问：确认请求了 `groups`，ID Token 中存在该 Claim，并且与
+  `policy.csv` 完全一致。
+- CLI 打开浏览器后无法完成：确认本地 Callback Port 可用，且浏览器能够访问 Argo CD
+  公网 URL。
+- `invalid_client`：轮换 Realmroot Secret 并更新 `argocd-secret`。
+
+## 轮换、撤销与回滚
+
+在 Realmroot 轮换 Client Secret，更新共享该 Application 的所有 Argo CD 实例，并重启
+Server。所有实例验证通过后才能删除旧 Secret。
+
+用户被移出 Organization 后，在重新检查成员关系时 Refresh 会失效；已签发的十分钟 ID
+Token 在过期前仍然有效。用户被移出 Team 后，下次刷新的 Token 会改变 Groups。
+
+回滚时恢复之前导出的 `argocd-cm` 和 `argocd-rbac-cm`；只有旧登录方式恢复后才能删除
+`oidc.realmroot.clientSecret`。SSO 和 RBAC 验证完成前保留本地 Argo CD 管理员凭证。
+
+更多信息参见 Argo CD 官方的
+[OIDC 配置](https://argo-cd.readthedocs.io/en/stable/operator-manual/user-management/)
+和 [RBAC](https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/) 文档。

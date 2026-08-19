@@ -1,0 +1,105 @@
+---
+title: Kubernetes and OIDC
+description: Use Realmroot Organizations and Teams to authenticate people to Kubernetes without moving cluster authorization out of Kubernetes.
+---
+
+Realmroot can act as the OpenID Connect issuer for Kubernetes. Realmroot
+authenticates the person and issues Team names in the `groups` claim. Each
+cluster keeps its own RBAC policy and makes the final authorization decision.
+
+This integration is for people using `kubectl` and products such as Argo CD. It
+is not Kubernetes workload identity and does not give Pods cloud credentials.
+
+## Trust and tenancy model
+
+- An Organization is a strict tenant boundary.
+- A private Application admits only active members of its owner Organization.
+- A Team name is the external Kubernetes group name.
+- Realmroot roles and Resource scopes are not Kubernetes groups.
+- One Kubernetes Application can be reused by every cluster in an Organization.
+- A token issued for one Organization's client ID is not valid for a cluster
+  configured with another Organization's client ID.
+
+Changing a Team name changes the group in newly issued tokens. Update every
+affected `RoleBinding`, `ClusterRoleBinding`, and Argo CD RBAC mapping before
+renaming a Team.
+
+## Create the Kubernetes Application
+
+In the Realmroot Console, create an Application with these values:
+
+| Setting | Value |
+| --- | --- |
+| Client type | `public_native` |
+| Visibility | `private` |
+| OIDC scopes | `openid profile email groups offline_access` |
+| PKCE | Required |
+| Client secret | None |
+| Owner | The Organization that owns the clusters |
+
+Add the loopback redirect URI used by your chosen OIDC credential plugin. The
+[kubelogin guide](/docs/guides/kubernetes-kubeconfig-rbac/) uses the redirect
+URI passed to `--oidc-redirect-url`. Do not add wildcard redirect URIs.
+
+Create Teams with stable, lowercase kebab-case names such as
+`platform-admins`, `developers`, and `auditors`, then add Organization members
+to the appropriate Teams.
+
+## Claims Kubernetes consumes
+
+Request the `groups` scope. A private Kubernetes Application receives an ID
+token containing claims similar to:
+
+```json
+{
+  "iss": "https://id.example.com/api/auth",
+  "aud": "KUBERNETES_CLIENT_ID",
+  "sub": "USER_ID",
+  "email": "user@example.com",
+  "groups": ["platform-admins", "developers"],
+  "urn:realmroot:params:oauth:org": "ORGANIZATION_ID"
+}
+```
+
+Configure Kubernetes to use `email` as the username claim and `groups` as the
+groups claim. The Organization claim is useful for audit and application
+policy, but Kubernetes RBAC does not consume it automatically.
+
+Realmroot ID tokens expire after ten minutes. If a member is removed from the
+Organization, refresh fails. If Team membership changes, the next refresh
+rebuilds `groups`; an already issued token remains usable until it expires.
+
+## Configure the cluster
+
+- For a control plane you operate, follow the self-managed configuration in
+  [Kubernetes kubeconfig and RBAC](/docs/guides/kubernetes-kubeconfig-rbac/).
+- For EKS, ACK Pro, Huawei CCE, OCI OKE, and GKE, use the
+  [managed Kubernetes guide](/docs/guides/managed-kubernetes/).
+- For Argo CD, create a separate confidential Application and follow the
+  [Argo CD guide](/docs/guides/argocd/).
+
+## Security checklist
+
+- Use a private Application owned by the same Organization as the clusters.
+- Keep the Realmroot issuer publicly reachable from the managed control plane.
+- Preserve existing administrator access until OIDC and RBAC are verified.
+- Bind Teams to the minimum Kubernetes roles required; authentication grants no
+  permissions by itself.
+- Never place an ID token, refresh token, client secret, or administrator
+  kubeconfig in documentation, source control, or a shared kubeconfig.
+- Enable Kubernetes audit logging and record the Application client ID used by
+  each cluster.
+
+## Compatibility summary
+
+| Platform | Status | Notes |
+| --- | --- | --- |
+| Self-managed Kubernetes | Supported | Configure kube-apiserver flags or structured authentication. |
+| Amazon EKS | Supported | One external OIDC provider per cluster. |
+| Alibaba Cloud ACK Pro | Supported | Control-plane parameter change restarts the control plane. |
+| Huawei Cloud CCE | Supported | OIDC parameter change restarts kube-apiserver. |
+| OCI OKE | Supported with prerequisites | Requires an enhanced, VCN-native eligible cluster. |
+| GKE | Supported through Workforce Identity Federation | Uses Google principal identifiers and `gcloud`, not the generic kubeconfig flow. |
+| AKS external JWT authenticator | Not production-supported | The Azure API is Preview. |
+| DigitalOcean DOKS | Not currently supported | DOKS requires a `team_role` claim that Realmroot does not issue. |
+| Tencent TKE and IBM Cloud Kubernetes | Not currently supported | No stable direct configuration for an arbitrary external OIDC issuer. |

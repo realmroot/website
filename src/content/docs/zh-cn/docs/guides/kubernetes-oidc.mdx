@@ -1,0 +1,98 @@
+---
+title: Kubernetes 与 OIDC
+description: 使用 Realmroot Organization 和 Team 为 Kubernetes 提供人员认证，并继续由 Kubernetes 管理集群权限。
+---
+
+Realmroot 可以作为 Kubernetes 的 OpenID Connect Issuer。Realmroot 负责认证用户，并在
+`groups` Claim 中签发 Team name；每个集群继续使用自己的 RBAC 作出最终授权决定。
+
+这套集成面向使用 `kubectl` 的人员以及 Argo CD 等产品，不是 Kubernetes Workload
+Identity，也不会给 Pod 签发云平台凭证。
+
+## 信任与租户模型
+
+- Organization 是严格的租户边界。
+- Private Application 只允许所属 Organization 的有效成员登录。
+- Team name 就是外部 Kubernetes Group name。
+- Realmroot Role 和 Resource Scope 不是 Kubernetes Group。
+- 一个 Organization 的所有集群可以复用同一个 Kubernetes Application。
+- 使用一个 Organization Client ID 签发的 Token，不能通过配置了另一个 Organization
+  Client ID 的集群认证。
+
+修改 Team name 会改变后续 Token 中的 Group。改名前必须同步所有受影响的
+`RoleBinding`、`ClusterRoleBinding` 和 Argo CD RBAC 映射。
+
+## 创建 Kubernetes Application
+
+在 Realmroot Console 中使用以下设置创建 Application：
+
+| 设置 | 值 |
+| --- | --- |
+| Client type | `public_native` |
+| Visibility | `private` |
+| OIDC scopes | `openid profile email groups offline_access` |
+| PKCE | 必须启用 |
+| Client secret | 无 |
+| Owner | 拥有这些集群的 Organization |
+
+添加所选 OIDC Credential Plugin 使用的 Loopback Redirect URI。
+[kubelogin 指南](/zh-cn/docs/guides/kubernetes-kubeconfig-rbac/)使用传给
+`--oidc-redirect-url` 的地址。不要使用通配符 Redirect URI。
+
+创建稳定的、小写 kebab-case Team name，例如 `platform-admins`、`developers` 和
+`auditors`，再把 Organization 成员加入相应 Team。
+
+## Kubernetes 使用的 Claims
+
+客户端必须请求 `groups` Scope。Private Kubernetes Application 获得的 ID Token 类似：
+
+```json
+{
+  "iss": "https://id.example.com/api/auth",
+  "aud": "KUBERNETES_CLIENT_ID",
+  "sub": "USER_ID",
+  "email": "user@example.com",
+  "groups": ["platform-admins", "developers"],
+  "urn:realmroot:params:oauth:org": "ORGANIZATION_ID"
+}
+```
+
+Kubernetes 使用 `email` 作为 Username Claim，使用 `groups` 作为 Groups Claim。
+Organization Claim 可用于审计或应用策略，但 Kubernetes RBAC 不会自动使用它。
+
+Realmroot ID Token 的有效期为十分钟。成员被移出 Organization 后 Refresh 会失败；Team
+成员关系变化后，下次 Refresh 会重新生成 `groups`；已经签发的 Token 在过期前仍然有效。
+
+## 配置集群
+
+- 自己管理控制面时，使用
+  [Kubernetes kubeconfig 与 RBAC](/zh-cn/docs/guides/kubernetes-kubeconfig-rbac/)
+  中的自管配置。
+- EKS、ACK Pro、华为 CCE、OCI OKE 和 GKE 使用
+  [托管 Kubernetes 指南](/zh-cn/docs/guides/managed-kubernetes/)。
+- Argo CD 必须使用独立的 Confidential Application，参见
+  [Argo CD 指南](/zh-cn/docs/guides/argocd/)。
+
+## 安全检查清单
+
+- 使用由集群所属 Organization 拥有的 Private Application。
+- 确保托管控制面能够访问 Realmroot Issuer。
+- OIDC 和 RBAC 验证完成前保留现有管理员访问方式。
+- 仅把 Team 绑定到必需的最小 Kubernetes Role；认证本身不会授予权限。
+- 不要把 ID Token、Refresh Token、Client Secret 或管理员 kubeconfig 写入文档、源码或
+  共享 kubeconfig。
+- 开启 Kubernetes 审计日志，并记录每个集群使用的 Application Client ID。
+
+## 兼容性概览
+
+| 平台 | 状态 | 说明 |
+| --- | --- | --- |
+| 自管 Kubernetes | 支持 | 配置 kube-apiserver flags 或 Structured Authentication。 |
+| Amazon EKS | 支持 | 每个集群只能关联一个外部 OIDC Provider。 |
+| 阿里云 ACK Pro | 支持 | 修改管控面参数会重启控制面。 |
+| 华为云 CCE | 支持 | 修改 OIDC 参数会重启 kube-apiserver。 |
+| OCI OKE | 有前置条件地支持 | 要求满足 Enhanced、VCN-native 等条件。 |
+| GKE | 通过 Workforce Identity Federation 支持 | 使用 Google Principal 和 `gcloud`，不使用通用 kubeconfig 流程。 |
+| AKS 外部 JWT Authenticator | 暂不作为生产支持 | Azure API 仍为 Preview。 |
+| DigitalOcean DOKS | 当前不支持 | DOKS 要求 Realmroot 当前不会签发的 `team_role` Claim。 |
+| 腾讯 TKE、IBM Cloud Kubernetes | 当前不支持 | 没有稳定的任意外部 OIDC Issuer 直接配置方式。 |

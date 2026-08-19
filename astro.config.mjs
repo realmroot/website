@@ -90,6 +90,26 @@ export default defineConfig({
               translations: { 'zh-CN': '产品身份与信任基础' },
               slug: 'docs/guides/product-identity-root',
             },
+            {
+              label: 'Kubernetes and OIDC',
+              translations: { 'zh-CN': 'Kubernetes 与 OIDC' },
+              slug: 'docs/guides/kubernetes-oidc',
+            },
+            {
+              label: 'Kubernetes kubeconfig and RBAC',
+              translations: { 'zh-CN': 'Kubernetes kubeconfig 与 RBAC' },
+              slug: 'docs/guides/kubernetes-kubeconfig-rbac',
+            },
+            {
+              label: 'Managed Kubernetes',
+              translations: { 'zh-CN': '托管 Kubernetes' },
+              slug: 'docs/guides/managed-kubernetes',
+            },
+            {
+              label: 'Argo CD',
+              translations: { 'zh-CN': 'Argo CD' },
+              slug: 'docs/guides/argocd',
+            },
           ],
         },
       ],
