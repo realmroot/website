@@ -19,3 +19,10 @@ pnpm check
 pnpm build
 pnpm deploy:dry-run
 ```
+
+## Deployment
+
+Cloudflare Workers Builds deploys this repository to the existing
+`realmroot-website` Worker. Keep the Worker name aligned with `wrangler.jsonc`
+when configuring the Git integration; the GitHub repository name is `website`,
+but it is not the Worker name.
