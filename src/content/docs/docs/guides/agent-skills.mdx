@@ -1,0 +1,86 @@
+---
+title: Use Realmroot Skills
+description: Choose, install, update, and invoke the Realmroot Skills for Agent access and product integration.
+---
+
+The `realmroot/realmroot` repository publishes three focused Skills. Install
+only the ones needed for the job.
+
+| Skill | Use it for |
+| --- | --- |
+| `realmroot` | Establish a stable Agent identity, discover private Resources, request access, invoke APIs, and administer Realmroot. |
+| `integrate-realmroot-application` | Connect browser, native, CLI, or server applications to Realmroot with OAuth and OIDC. |
+| `integrate-realmroot-resource-server` | Assess and implement the requirements for an existing protected API to join Realmroot. |
+
+## Inspect the package
+
+List the available Skills without installing them:
+
+```bash
+npx skills add realmroot/realmroot --list
+```
+
+## Install the Skills you need
+
+For Agent identity and private capability access:
+
+```bash
+npx skills add realmroot/realmroot -g --agent codex -y --skill realmroot
+```
+
+For application integration:
+
+```bash
+npx skills add realmroot/realmroot -g --agent codex -y \
+  --skill realmroot integrate-realmroot-application
+```
+
+For Resource Server integration:
+
+```bash
+npx skills add realmroot/realmroot -g --agent codex -y \
+  --skill realmroot integrate-realmroot-resource-server
+```
+
+Verify the installed names and sources:
+
+```bash
+npx skills list -g --agent codex
+```
+
+## Ask for the outcome
+
+Give the Agent the product goal instead of an authentication subtask:
+
+```text
+Use Realmroot to discover and call the private API capability needed for this task.
+```
+
+For integration work, name the relevant Skill explicitly:
+
+```text
+Use the Realmroot application integration Skill to connect this application and verify sign-in end to end.
+
+Use the Realmroot Resource Server integration Skill to expose this API and prove a real Agent operation.
+```
+
+On first protected use, the Agent establishes its identity and requests the
+required authority. The controller approves through the hosted browser flow,
+then the original operation resumes. Discovery, identity, and authorization are
+intermediate steps; the requested API result is the outcome.
+
+## Update safely
+
+Update globally installed Skills from their recorded sources:
+
+```bash
+npx skills update -g -y
+```
+
+Realmroot Skills and the Restish adapter update independently. After a release
+that changes the Agent protocol or credential workflow, update both before
+running a protected operation.
+
+Continue with the [quick start](/docs/getting-started/quick-start/), or read
+[Agent identity and authority](/docs/concepts/agent-authority/) for the trust
+model behind the workflow.

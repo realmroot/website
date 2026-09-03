@@ -81,6 +81,11 @@ export default defineConfig({
           translations: { 'zh-CN': '接入指南' },
           items: [
             {
+              label: 'Use Realmroot Skills',
+              translations: { 'zh-CN': '使用 Realmroot Skills' },
+              slug: 'docs/guides/agent-skills',
+            },
+            {
               label: 'Make an API Agent-ready',
               translations: { 'zh-CN': '让 API 可被 Agent 使用' },
               slug: 'docs/guides/make-an-api-agent-ready',
@@ -89,6 +94,11 @@ export default defineConfig({
               label: 'Product identity foundation',
               translations: { 'zh-CN': '产品身份与信任基础' },
               slug: 'docs/guides/product-identity-root',
+            },
+            {
+              label: 'Deploy Realmroot',
+              translations: { 'zh-CN': '部署 Realmroot' },
+              slug: 'docs/guides/deploy-realmroot',
             },
             {
               label: 'Kubernetes and OIDC',

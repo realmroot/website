@@ -1,0 +1,81 @@
+---
+title: 使用 Realmroot Skills
+description: 为 Agent 访问和产品接入选择、安装、更新并调用 Realmroot Skills。
+---
+
+`realmroot/realmroot` 仓库提供三个职责明确的 Skill。只安装当前任务需要的部分即可。
+
+| Skill | 适用场景 |
+| --- | --- |
+| `realmroot` | 建立稳定 Agent 身份、发现私有 Resource、申请权限、调用 API，以及管理 Realmroot。 |
+| `integrate-realmroot-application` | 通过 OAuth/OIDC 将浏览器、Native、CLI 或服务端应用接入 Realmroot。 |
+| `integrate-realmroot-resource-server` | 评估并实现现有受保护 API 接入 Realmroot 所需的能力。 |
+
+## 查看 Skill 包
+
+只查看仓库提供的 Skill，不执行安装：
+
+```bash
+npx skills add realmroot/realmroot --list
+```
+
+## 安装需要的 Skill
+
+用于 Agent 身份和私有能力访问：
+
+```bash
+npx skills add realmroot/realmroot -g --agent codex -y --skill realmroot
+```
+
+用于应用接入：
+
+```bash
+npx skills add realmroot/realmroot -g --agent codex -y \
+  --skill realmroot integrate-realmroot-application
+```
+
+用于 Resource Server 接入：
+
+```bash
+npx skills add realmroot/realmroot -g --agent codex -y \
+  --skill realmroot integrate-realmroot-resource-server
+```
+
+检查已安装名称和来源：
+
+```bash
+npx skills list -g --agent codex
+```
+
+## 直接描述目标
+
+告诉 Agent 你想得到什么结果，不要把认证过程当成任务本身：
+
+```text
+使用 Realmroot 发现并调用完成当前任务所需的私有 API 能力。
+```
+
+执行接入工作时，可以明确指定对应 Skill：
+
+```text
+使用 Realmroot 应用接入 Skill 连接这个应用，并完成端到端登录验证。
+
+使用 Realmroot Resource Server 接入 Skill 暴露这个 API，并验证一次真实的 Agent 操作。
+```
+
+首次执行受保护操作时，Agent 会建立身份并申请所需权限。控制者在托管页面中批准后，
+原始操作会自动继续。发现、身份和授权都是中间步骤，拿到 API 结果才是任务结果。
+
+## 安全更新
+
+从已记录的来源更新全局 Skill：
+
+```bash
+npx skills update -g -y
+```
+
+Realmroot Skills 与 Restish Adapter 独立更新。当版本变更涉及 Agent 协议或凭证流程时，
+应在执行受保护操作前同时更新二者。
+
+接下来可以阅读[快速开始](/zh-cn/docs/getting-started/quick-start/)，或通过
+[Agent 身份与权限](/zh-cn/docs/concepts/agent-authority/)了解这套流程背后的信任模型。
