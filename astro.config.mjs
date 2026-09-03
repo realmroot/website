@@ -10,9 +10,9 @@ export default defineConfig({
     starlight({
       title: 'Realmroot',
       description: 'Turn existing OpenAPI services into secure, discoverable tools for AI agents.',
-      favicon: '/favicon.png',
+      favicon: '/assets/logo.png',
       logo: {
-        src: './src/assets/realmroot-logo.png',
+        src: './src/assets/logo.png',
         alt: 'Realmroot',
       },
       social: [
