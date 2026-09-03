@@ -558,7 +558,7 @@ html[lang='zh-CN'] .hero h1 {
   display: inline-block;
   width: 28px;
   height: 28px;
-  background: url('/realmroot-logo.png') center / contain no-repeat;
+  background: url('/assets/logo.png') center / contain no-repeat;
   flex: none;
 }
 
