@@ -1,0 +1,89 @@
+---
+title: Deploy Realmroot
+description: Deploy and operate an isolated Realmroot identity and policy realm on Cloudflare.
+---
+
+Realmroot runs on Cloudflare Workers with D1, R2, static assets, email, and
+scheduled jobs. One deployment is one realm: one issuer, user pool, Agent
+namespace, policy boundary, and administrative control plane.
+
+Use separate deployments when products must not share users, administrators,
+issuer URLs, login methods, connectors, or security policy.
+
+## Before you deploy
+
+You need:
+
+- a GitHub fork of [`realmroot/realmroot`](https://github.com/realmroot/realmroot);
+- a Cloudflare account;
+- a Cloudflare API token scoped to the intended account with access to Workers,
+  D1, R2, and the bindings used by Realmroot; and
+- a verified sending domain if the realm will deliver authentication email.
+
+Keep deployment credentials in GitHub Actions secrets. Never commit them to the
+fork or store them as ordinary repository variables.
+
+## Create a realm
+
+1. Copy
+   [`deploy/realmroot-fork.yml`](https://github.com/realmroot/realmroot/blob/main/deploy/realmroot-fork.yml)
+   to `.github/workflows/deploy.yml` in the fork, then enable GitHub Actions.
+2. Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` under
+   **Settings → Secrets and variables → Actions**.
+3. Optionally provide `BETTER_AUTH_SECRET` and `CREDENTIAL_ENCRYPTION_KEY`.
+   Otherwise, the first deployment generates them and later deployments reuse
+   the existing Worker secrets.
+4. Optionally set `REALMROOT_WORKER_NAME`, `REALMROOT_D1_DATABASE`, and
+   `REALMROOT_R2_BUCKET` when adopting existing resources or overriding the
+   fork-derived names.
+5. Run **Deploy Realmroot Fork** from the fork's **Actions** tab.
+
+The workflow creates missing resources, applies committed D1 migrations, builds
+the application, and deploys the exact triggering fork commit. Existing named
+resources and Worker secrets are preserved.
+
+## Complete first-admin onboarding
+
+Open the deployed URL after the workflow succeeds. When the database has no
+users, Realmroot exposes the onboarding flow for creating the first
+administrator. The endpoint closes after that account is created.
+
+After signing in:
+
+1. register the first product application from **Console → Applications**;
+2. configure authentication methods and connectors;
+3. configure a verified sender under **Console → Settings → Email delivery**;
+4. add API Resources that Agents should be able to discover; and
+5. review security, roles, and grant policy before inviting users.
+
+Use [Product identity foundation](/docs/guides/product-identity-root/) for the
+realm model and [Make an API Agent-ready](/docs/guides/make-an-api-agent-ready/)
+for Resource Server integration.
+
+## Custom domains and stored data
+
+Set `BETTER_AUTH_URL` to the immutable public origin when using a custom domain.
+The OAuth/OIDC issuer is that origin plus `/api/auth`. Configure matching
+WebAuthn values when passkeys span a custom domain.
+
+Each realm should keep its own D1 database and R2 bucket. D1 stores identity and
+policy state. R2 stores uploaded avatars, product marks, and other private
+assets served through Realmroot's asset API.
+
+## Upgrade a deployment
+
+Use GitHub's **Sync fork** action to update the fork's `main` branch. The push
+triggers the deployment workflow, making that commit the explicit deployed
+version.
+
+Every deployment applies pending database migrations before publishing code.
+Review release notes and migration guidance before selecting an older commit:
+rolling code back does not reverse an applied migration. Prefer a prepared
+roll-forward when data has changed.
+
+After an Agent protocol or authorization-flow upgrade, update the
+[Realmroot Skills](/docs/guides/agent-skills/) and Restish adapter before the
+next protected operation.
+
+For implementation-level configuration and migration notes, consult the
+[deployment sources](https://github.com/realmroot/realmroot/tree/main/docs/deploy).

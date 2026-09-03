@@ -84,15 +84,8 @@ path.
 ## Run your own realm
 
 Realmroot is open source and deploys to Cloudflare. Each deployment is one
-identity and policy realm.
-
-1. Fork [`realmroot/realmroot`](https://github.com/realmroot/realmroot).
-2. Install `deploy/realmroot-fork.yml` as `.github/workflows/deploy.yml` in the
-   fork.
-3. Configure the Cloudflare secrets and email sender from the
-   [deployment guide](https://github.com/realmroot/realmroot/blob/main/docs/deploy/cloudflare.md).
-4. Run **Deploy Realmroot Fork**, open the deployed URL, and complete first-admin
-   onboarding.
+identity and policy realm. Follow [Deploy Realmroot](/docs/guides/deploy-realmroot/)
+to create a deployment, complete first-admin onboarding, and plan upgrades.
 
 Product applications can then register as OIDC clients. API teams can
 [make an API Agent-ready](/docs/guides/make-an-api-agent-ready/) by registering
@@ -104,6 +97,8 @@ its protected resource URL and live OpenAPI contract.
   the complete control and data paths.
 - Read [Agent identity and authority](/docs/concepts/agent-authority/) before
   designing grant or revocation policy.
+- Read [Use Realmroot Skills](/docs/guides/agent-skills/) to choose, install,
+  and update the Skills for Agent access or product integration.
 - Follow the canonical
   [Realmroot Skill instructions](https://github.com/realmroot/realmroot/tree/main/skills/realmroot)
   when exact commands differ from this overview.

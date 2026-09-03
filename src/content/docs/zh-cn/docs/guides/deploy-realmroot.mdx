@@ -1,0 +1,81 @@
+---
+title: 部署 Realmroot
+description: 在 Cloudflare 上部署并运行一个彼此隔离的 Realmroot 身份与策略 Realm。
+---
+
+Realmroot 运行在 Cloudflare Workers 上，并使用 D1、R2、静态资产、邮件与定时任务。
+一个部署就是一个 Realm：拥有独立的 Issuer、用户池、Agent Namespace、策略边界和
+管理控制面。
+
+如果多个产品不能共享用户、管理员、Issuer URL、登录方式、Connector 或安全策略，
+就应分别部署 Realmroot。
+
+## 部署前准备
+
+你需要：
+
+- [`realmroot/realmroot`](https://github.com/realmroot/realmroot) 的 GitHub Fork；
+- 一个 Cloudflare 账户；
+- 一个仅授权到目标账户，并可管理 Workers、D1、R2 及 Realmroot 所需 Binding 的
+  Cloudflare API Token；
+- 如果需要发送认证邮件，还要准备一个已验证的发信域名。
+
+部署凭证必须保存在 GitHub Actions Secrets 中。不要把凭证提交到 Fork，也不要将其
+保存为普通 Repository Variable。
+
+## 创建 Realm
+
+1. 将
+   [`deploy/realmroot-fork.yml`](https://github.com/realmroot/realmroot/blob/main/deploy/realmroot-fork.yml)
+   复制到 Fork 的 `.github/workflows/deploy.yml`，然后启用 GitHub Actions。
+2. 在 **Settings → Secrets and variables → Actions** 中添加
+   `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ACCOUNT_ID`。
+3. 可以自行提供 `BETTER_AUTH_SECRET` 和 `CREDENTIAL_ENCRYPTION_KEY`；如果没有提供，
+   首次部署会自动生成，后续部署会复用已有 Worker Secret。
+4. 接管已有资源或需要自定义名称时，可以设置 `REALMROOT_WORKER_NAME`、
+   `REALMROOT_D1_DATABASE` 和 `REALMROOT_R2_BUCKET`。
+5. 在 Fork 的 **Actions** 页面运行 **Deploy Realmroot Fork**。
+
+Workflow 会创建缺失资源、应用已提交的 D1 Migration、构建应用，并部署触发任务的
+准确 Fork Commit。已有的同名资源和 Worker Secret 会被保留。
+
+## 完成首位管理员初始化
+
+Workflow 成功后打开部署地址。当数据库中还没有用户时，Realmroot 会开放 Onboarding
+流程，用于创建首位管理员；账户创建后，该入口会自动关闭。
+
+登录后：
+
+1. 在 **Console → Applications** 注册第一个产品应用；
+2. 配置认证方式和 Connector；
+3. 在 **Console → Settings → Email delivery** 设置已验证的发件人；
+4. 添加希望 Agent 能够发现的 API Resource；
+5. 邀请用户前检查安全设置、Role 和 Grant 策略。
+
+通过[产品身份与信任基础](/zh-cn/docs/guides/product-identity-root/)了解 Realm 模型，
+通过[让 API 可被 Agent 使用](/zh-cn/docs/guides/make-an-api-agent-ready/)完成
+Resource Server 接入。
+
+## 自定义域名与数据
+
+使用自定义域名时，将 `BETTER_AUTH_URL` 设置为不可变的公开 Origin。OAuth/OIDC
+Issuer 是该 Origin 加 `/api/auth`。如果 Passkey 跨自定义域名使用，还要配置匹配的
+WebAuthn 参数。
+
+每个 Realm 应使用独立的 D1 Database 和 R2 Bucket。D1 保存身份与策略状态；R2 保存
+头像、产品标志和其他私有资产，并由 Realmroot Asset API 对外提供。
+
+## 升级部署
+
+在 GitHub 上使用 **Sync fork** 更新 Fork 的 `main` 分支。同步产生的 Push 会触发部署，
+该 Commit 也就成为明确的线上版本。
+
+每次部署都会在发布代码前应用待执行的 Database Migration。选择旧 Commit 前应先检查
+Release Note 和 Migration 指南：回滚代码不会撤销已经执行的数据迁移。数据发生变化时，
+应优先准备向前修复方案。
+
+如果版本升级涉及 Agent 协议或授权流程，应在下一次受保护操作前更新
+[Realmroot Skills](/zh-cn/docs/guides/agent-skills/)和 Restish Adapter。
+
+实现级配置和 Migration 说明位于
+[部署源码文档](https://github.com/realmroot/realmroot/tree/main/docs/deploy)。

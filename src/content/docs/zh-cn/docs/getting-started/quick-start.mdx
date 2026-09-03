@@ -77,13 +77,9 @@ API 验证 Token 与请求证明，要求当前操作的 Scope，并执行自身
 
 ## 运行自己的 Realm
 
-Realmroot 是部署在 Cloudflare 上的开源服务。每个部署代表一个身份与策略 Realm。
-
-1. Fork [`realmroot/realmroot`](https://github.com/realmroot/realmroot)。
-2. 将 `deploy/realmroot-fork.yml` 安装为 Fork 中的 `.github/workflows/deploy.yml`。
-3. 按照[部署指南](https://github.com/realmroot/realmroot/blob/main/docs/deploy/cloudflare.md)
-   配置 Cloudflare Secret 与邮件发件人。
-4. 运行 **Deploy Realmroot Fork**，打开部署 URL，并完成首位管理员 Onboarding。
+Realmroot 是部署在 Cloudflare 上的开源服务，每个部署代表一个身份与策略 Realm。
+按照[部署 Realmroot](/zh-cn/docs/guides/deploy-realmroot/)创建部署、完成首位管理员初始化，
+并规划后续升级。
 
 随后，产品应用可以注册为 OIDC Client；API 团队可以注册受保护资源 URL 与实时
 OpenAPI 契约，[让 API 可被 Agent 使用](/zh-cn/docs/guides/make-an-api-agent-ready/)。
@@ -93,6 +89,8 @@ OpenAPI 契约，[让 API 可被 Agent 使用](/zh-cn/docs/guides/make-an-api-ag
 - 阅读 [Realmroot 如何工作](/zh-cn/docs/getting-started/how-it-works/)，了解完整控制路径与
   数据路径。
 - 在设计 Grant 或撤销策略前阅读 [Agent 身份与权限](/zh-cn/docs/concepts/agent-authority/)。
+- 阅读[使用 Realmroot Skills](/zh-cn/docs/guides/agent-skills/)，为 Agent 访问或产品接入
+  选择、安装和更新对应 Skill。
 - 当准确命令与本概览不同时，以
   [Realmroot Skill 指令](https://github.com/realmroot/realmroot/tree/main/skills/realmroot)
   为准。
