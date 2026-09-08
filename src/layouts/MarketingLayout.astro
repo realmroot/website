@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import LegalLinks from '../components/LegalLinks.astro';
 import { copy, site, type Locale } from '../site';
 
 interface Props {
@@ -168,6 +169,7 @@ const canonical = new URL(canonicalPath, Astro.site);
       </div>
       <div class="footer-bottom">
         <span>© {new Date().getFullYear()} Realmroot</span>
+        <LegalLinks isChinese={isChinese} />
         <span>{t.footer.legal}</span>
       </div>
     </footer>
