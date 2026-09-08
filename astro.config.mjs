@@ -27,6 +27,9 @@ export default defineConfig({
         'zh-cn': { label: '简体中文', lang: 'zh-CN' },
       },
       defaultLocale: 'root',
+      components: {
+        Footer: './src/components/DocsFooter.astro',
+      },
       customCss: ['./src/styles/starlight.css'],
       sidebar: [
         {

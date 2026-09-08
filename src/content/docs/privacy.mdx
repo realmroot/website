@@ -3,11 +3,18 @@ title: Privacy Policy
 description: How Realmroot handles account, Agent, authorization, and service data.
 ---
 
-Effective August 10, 2026.
+Effective September 8, 2026.
 
-Realmroot provides identity, authorization, and capability-discovery services
-for people, applications, and AI Agents. This policy explains the information
-processed by the hosted Realmroot service.
+## Scope
+
+This policy covers the Realmroot website at [realmroot.dev](https://realmroot.dev/)
+and the official hosted identity, authorization, and capability-discovery service
+at [id.realmroot.dev](https://id.realmroot.dev/). It does not cover third-party
+self-hosted deployments, whose operators determine their own data practices.
+Other products and external services may have separate privacy policies.
+
+The [Terms of Service](/terms/) describe use of the website and official hosted
+service. The open-source software is separately licensed under Apache-2.0.
 
 ## Information we process
 
@@ -19,8 +26,17 @@ and security events.
 
 When you connect an external provider, Realmroot processes the provider account
 identifier, granted scopes, and OAuth credentials required to maintain that
-connection. Provider credentials are encrypted at rest and are not exposed to
-Agents. Realmroot does not ask Agents to create provider API keys.
+connection. Stored provider credentials are encrypted at rest. Authorized Agents can receive
+access credentials limited by the approved authorization; this is distinct from
+credentials used to maintain a provider connection. Connected external services
+may process credentials and requests under their own policies.
+
+## Website visits and cookies
+
+Website requests pass through Cloudflare infrastructure, which processes network
+and request information to deliver and protect the site. The hosted identity
+service uses cookies to maintain sign-in sessions and support authentication.
+Blocking these cookies can prevent sign-in or session features from working.
 
 ## How we use information
 
@@ -36,12 +52,26 @@ with external providers you explicitly connect, when required by law, or when
 necessary to protect users and the service. Cloudflare provides hosting,
 networking, storage, and security infrastructure for the hosted service.
 
+When you sign in to a connected application, it receives identity information
+such as an account identifier and, where authorized, profile information according
+to the requested and approved access. Authorized Agents and resource services
+receive the identity, authorization information, and request data needed for the
+operations you authorize. The receiving application's or provider's privacy
+policy governs its subsequent handling of that information.
+
 ## Retention and control
 
 We retain information only while it is needed to provide the service, satisfy
-security and audit requirements, or comply with law. You can disconnect an
-external provider to revoke the connection and stop future credential use. You
-can also revoke Agent grants and sessions from Realmroot's account controls.
+security and audit requirements, or comply with law. You can revoke Agent grants and sessions and disconnect external provider
+connections from the account controls. Revocation prevents further access through
+the revoked authorization; it does not undo completed operations or delete data
+already held by connected applications or providers.
+
+Account deletion removes or clears account profile and authentication records and
+revokes associated access. Some identifiers and reduced authorization or audit
+records remain to preserve security and record integrity. External revocation and
+stored-file cleanup can finish after local account deletion. Deleting a Realmroot
+account does not delete your accounts or data at external providers.
 
 ## Security and changes
 
@@ -50,5 +80,6 @@ controls, and audit records to protect service data. No system can guarantee
 absolute security. Material changes to this policy will be published on this
 page with a new effective date.
 
-Questions or privacy requests may be submitted through the
-[Realmroot repository](https://github.com/realmroot/realmroot/issues).
+For general questions, use the [Realmroot repository](https://github.com/realmroot/realmroot/issues).
+GitHub issues are public: do not post personal information, credentials, or
+account-deletion evidence there.

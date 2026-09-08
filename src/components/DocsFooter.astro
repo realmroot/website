@@ -1,0 +1,20 @@
+---
+import DefaultFooter from '@astrojs/starlight/components/Footer.astro';
+import LegalLinks from './LegalLinks.astro';
+
+const isChinese = Astro.locals.starlightRoute.lang === 'zh-CN';
+---
+
+<DefaultFooter />
+<div class="legal-footer">
+  <LegalLinks isChinese={isChinese} />
+</div>
+
+<style>
+  .legal-footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--sl-color-gray-5);
+    color: var(--sl-color-gray-2);
+  }
+</style>
